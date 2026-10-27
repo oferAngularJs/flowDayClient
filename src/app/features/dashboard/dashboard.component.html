@@ -1,0 +1,579 @@
+@if (taskService.dashboardData(); as data) {
+  <section class="space-y-4 block transition-opacity duration-200">
+    <!-- Greeting and Header Bar -->
+    <div class="flex items-start justify-between">
+      <div>
+        <div class="flex items-center gap-2 text-on-surface-variant text-label-sm font-label-sm">
+          <span>{{ data.dateLabel }}</span>
+          <span class="w-1 h-1 rounded-full bg-outline"></span>
+          <span class="font-code-sm text-code-sm bg-surface-container px-1.5 py-0.5 rounded text-primary">
+            {{ data.sprintCode }}
+          </span>
+        </div>
+        <h1 class="text-headline-lg-mobile font-headline-lg-mobile tracking-tight text-on-surface mt-0.5">
+          Good morning, {{ data.userName }}. Let's make today count.
+        </h1>
+      </div>
+    </div>
+
+    <!-- Quick Action: New Task Strip -->
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
+        <span class="whitespace-nowrap px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm shrink-0">
+          High Priority ({{ data.highPriorityCount }})
+        </span>
+        <span class="whitespace-nowrap px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm shrink-0">
+          Workload: {{ data.totalWorkloadLabel }}
+        </span>
+      </div>
+      <button
+        type="button"
+        (click)="openNewTaskModal()"
+        class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm active:scale-95 transition-transform duration-150">
+        <span class="material-symbols-outlined text-[16px]">add</span>
+        <span>New Task</span>
+      </button>
+    </div>
+
+    <!-- Bento Stat Summary Grid -->
+    <app-bento-stats
+      [stats]="data.stats"
+      (scrollToTodayTasks)="scrollToTodayTasks()"
+      (scrollToOverdueTask)="scrollToOverdueTask()" />
+
+    <!-- Flowday AI Insight Card -->
+    <app-ai-insight-card
+      [insight]="data.aiInsight"
+      (inspectPlanner)="navigateToPlanner.emit()"
+      (smartReschedule)="onSmartReschedule()" />
+
+    <!-- Today's Focus Task List -->
+    <app-focus-task-list
+      [pendingTasks]="taskService.pendingTasks()"
+      [completedTasks]="taskService.completedTasks()"
+      [highlightedTaskId]="highlightedTaskId()"
+      (toggleTask)="taskService.toggleTaskStatus($event)"
+      (sortByTime)="taskService.toggleSortOrder()"
+      (editTask)="openEditTask($event)" />
+  </section>
+
+  <!-- New Task Modal Dialog -->
+  @if (showNewTaskModal()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-on-surface/40 backdrop-blur-[2px] transition-opacity overflow-y-auto"
+      (click)="showNewTaskModal.set(false)">
+      <div
+        class="bg-surface-container-lowest w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl shadow-2xl border border-outline-variant/50 overflow-hidden my-auto transform transition-all duration-200"
+        (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="p-4 sm:p-5 pb-3 border-b border-outline-variant/20 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[20px]">add_task</span>
+            </div>
+            <div>
+              <h3 class="text-headline-sm font-headline-sm text-on-surface">New Task</h3>
+              <p class="text-body-sm text-on-surface-variant">Create and schedule a priority task</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="showNewTaskModal.set(false)"
+            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <!-- Form Body -->
+        <form (ngSubmit)="submitNewTask()" class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
+          <!-- Title Input -->
+          <div>
+            <label for="task-title" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Task Title
+            </label>
+            <input
+              id="task-title"
+              type="text"
+              name="title"
+              [ngModel]="newTaskTitle()"
+              (ngModelChange)="newTaskTitle.set($event)"
+              placeholder="e.g., API Contract Validation"
+              autofocus
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition" />
+          </div>
+
+          <!-- Priority Selector -->
+          <div>
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Priority
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              @for (p of priorities; track p) {
+                <button
+                  type="button"
+                  (click)="newTaskPriority.set(p)"
+                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center"
+                  [class.bg-primary]="newTaskPriority() === p"
+                  [class.text-on-primary]="newTaskPriority() === p"
+                  [class.border-primary]="newTaskPriority() === p"
+                  [class.bg-surface-container-low]="newTaskPriority() !== p"
+                  [class.text-on-surface-variant]="newTaskPriority() !== p"
+                  [class.border-outline-variant]="newTaskPriority() !== p">
+                  {{ p }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Category Selector (Cool Dropdown with Icons) -->
+          <div class="relative">
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Category
+            </label>
+            <button
+              type="button"
+              (click)="toggleNewTaskCategoryDropdown()"
+              class="w-full px-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container transition-all flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center text-primary bg-surface-container-high">
+                  <span class="material-symbols-outlined text-[16px]">
+                    {{ getCategoryInfo(newTaskCategory()).icon }}
+                  </span>
+                </div>
+                <span class="text-body-md font-medium text-on-surface">
+                  {{ newTaskCategory() }}
+                </span>
+              </div>
+              <span
+                class="material-symbols-outlined text-[20px] text-on-surface-variant transition-transform duration-200"
+                [class.rotate-180]="isNewTaskCategoryDropdownOpen()">
+                expand_more
+              </span>
+            </button>
+
+            <!-- Dropdown Options Menu -->
+            @if (isNewTaskCategoryDropdownOpen()) {
+              <div
+                class="absolute left-0 right-0 top-full mt-1.5 z-30 p-1.5 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl backdrop-blur-sm space-y-1">
+                @for (cat of categories; track cat.label) {
+                  <button
+                    type="button"
+                    (click)="newTaskCategory.set(cat.label); isNewTaskCategoryDropdownOpen.set(false)"
+                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left"
+                    [class.bg-surface-container-high]="newTaskCategory() === cat.label"
+                    [class.hover:bg-surface-container]="newTaskCategory() !== cat.label">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-6 h-6 rounded-md flex items-center justify-center text-primary bg-surface-container-high">
+                        <span class="material-symbols-outlined text-[16px]">{{ cat.icon }}</span>
+                      </div>
+                      <span
+                        class="text-body-sm"
+                        [class.font-semibold]="newTaskCategory() === cat.label"
+                        [class.text-primary]="newTaskCategory() === cat.label"
+                        [class.text-on-surface]="newTaskCategory() !== cat.label">
+                        {{ cat.label }}
+                      </span>
+                    </div>
+                    @if (newTaskCategory() === cat.label) {
+                      <span class="material-symbols-outlined text-[17px] text-primary">check</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Time Range: From & To -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                Schedule Time
+              </label>
+              <span class="text-label-sm font-label-sm text-primary font-medium flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-md">
+                <span class="material-symbols-outlined text-[15px]">schedule</span>
+                Duration: {{ durationDisplayLabel() }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- From Time -->
+              <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
+                <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
+                  From
+                </span>
+                <div class="flex items-center gap-1">
+                  <!-- Hours -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="fromHour()"
+                      (ngModelChange)="fromHour.set($event)"
+                      name="fromHour"
+                      aria-label="Start Hour"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (h of hours; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                  </div>
+                  <span class="text-on-surface-variant font-bold text-label-md px-0.5">:</span>
+                  <!-- Minutes (jump of 5 mins) -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="fromMinute()"
+                      (ngModelChange)="fromMinute.set($event)"
+                      name="fromMinute"
+                      aria-label="Start Minute"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (m of minutes; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                  </div>
+                  <!-- AM/PM -->
+                  <div class="relative w-16">
+                    <select
+                      [ngModel]="fromPeriod()"
+                      (ngModelChange)="fromPeriod.set($event)"
+                      name="fromPeriod"
+                      aria-label="Start AM or PM"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-semibold text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (p of periods; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- To Time -->
+              <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
+                <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
+                  To
+                </span>
+                <div class="flex items-center gap-1">
+                  <!-- Hours -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="toHour()"
+                      (ngModelChange)="toHour.set($event)"
+                      name="toHour"
+                      aria-label="End Hour"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (h of hours; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                  </div>
+                  <span class="text-on-surface-variant font-bold text-label-md px-0.5">:</span>
+                  <!-- Minutes (jump of 5 mins) -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="toMinute()"
+                      (ngModelChange)="toMinute.set($event)"
+                      name="toMinute"
+                      aria-label="End Minute"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (m of minutes; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                  </div>
+                  <!-- AM/PM -->
+                  <div class="relative w-16">
+                    <select
+                      [ngModel]="toPeriod()"
+                      (ngModelChange)="toPeriod.set($event)"
+                      name="toPeriod"
+                      aria-label="End AM or PM"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-semibold text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (p of periods; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">
+            <button
+              type="button"
+              (click)="showNewTaskModal.set(false)"
+              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              <span>Create Task</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Edit Task Modal Dialog -->
+  @if (editingTask(); as task) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-on-surface/40 backdrop-blur-[2px] transition-opacity overflow-y-auto"
+      (click)="editingTask.set(null)">
+      <div
+        class="bg-surface-container-lowest w-full max-w-md max-h-[90dvh] flex flex-col rounded-2xl shadow-2xl border border-outline-variant/50 overflow-hidden my-auto transform transition-all duration-200"
+        (click)="$event.stopPropagation()">
+        <!-- Modal Header -->
+        <div class="p-4 sm:p-5 pb-3 border-b border-outline-variant/20 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[20px]">edit_note</span>
+            </div>
+            <div>
+              <h3 class="text-headline-sm font-headline-sm text-on-surface">Edit Task</h3>
+              <p class="text-body-sm text-on-surface-variant">Update task name and schedule hours</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            (click)="editingTask.set(null)"
+            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <!-- Form Body -->
+        <form (ngSubmit)="submitEditTask()" class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
+          <!-- Title Input -->
+          <div>
+            <label for="edit-task-title" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Task Title
+            </label>
+            <input
+              id="edit-task-title"
+              type="text"
+              name="editTitle"
+              [ngModel]="editTitle()"
+              (ngModelChange)="editTitle.set($event)"
+              placeholder="e.g., Client Architecture Sign-off"
+              autofocus
+              required
+              class="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition" />
+          </div>
+
+          <!-- Priority Selector -->
+          <div>
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Priority
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              @for (p of priorities; track p) {
+                <button
+                  type="button"
+                  (click)="editPriority.set(p)"
+                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center"
+                  [class.bg-primary]="editPriority() === p"
+                  [class.text-on-primary]="editPriority() === p"
+                  [class.border-primary]="editPriority() === p"
+                  [class.bg-surface-container-low]="editPriority() !== p"
+                  [class.text-on-surface-variant]="editPriority() !== p"
+                  [class.border-outline-variant]="editPriority() !== p">
+                  {{ p }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Category Selector (Cool Dropdown with Icons) -->
+          <div class="relative">
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              Category
+            </label>
+            <button
+              type="button"
+              (click)="toggleEditTaskCategoryDropdown()"
+              class="w-full px-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container transition-all flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary shadow-xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-md flex items-center justify-center text-primary bg-surface-container-high">
+                  <span class="material-symbols-outlined text-[16px]">
+                    {{ getCategoryInfo(editCategory()).icon }}
+                  </span>
+                </div>
+                <span class="text-body-md font-medium text-on-surface">
+                  {{ editCategory() }}
+                </span>
+              </div>
+              <span
+                class="material-symbols-outlined text-[20px] text-on-surface-variant transition-transform duration-200"
+                [class.rotate-180]="isEditTaskCategoryDropdownOpen()">
+                expand_more
+              </span>
+            </button>
+
+            <!-- Dropdown Options Menu -->
+            @if (isEditTaskCategoryDropdownOpen()) {
+              <div
+                class="absolute left-0 right-0 top-full mt-1.5 z-30 p-1.5 rounded-xl bg-surface-container-lowest border border-outline-variant shadow-xl backdrop-blur-sm space-y-1">
+                @for (cat of categories; track cat.label) {
+                  <button
+                    type="button"
+                    (click)="editCategory.set(cat.label); isEditTaskCategoryDropdownOpen.set(false)"
+                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left"
+                    [class.bg-surface-container-high]="editCategory() === cat.label"
+                    [class.hover:bg-surface-container]="editCategory() !== cat.label">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-6 h-6 rounded-md flex items-center justify-center text-primary bg-surface-container-high">
+                        <span class="material-symbols-outlined text-[16px]">{{ cat.icon }}</span>
+                      </div>
+                      <span
+                        class="text-body-sm"
+                        [class.font-semibold]="editCategory() === cat.label"
+                        [class.text-primary]="editCategory() === cat.label"
+                        [class.text-on-surface]="editCategory() !== cat.label">
+                        {{ cat.label }}
+                      </span>
+                    </div>
+                    @if (editCategory() === cat.label) {
+                      <span class="material-symbols-outlined text-[17px] text-primary">check</span>
+                    }
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Time Range: From & To -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                Schedule Hours
+              </label>
+              <span class="text-label-sm font-label-sm text-primary font-medium flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-md">
+                <span class="material-symbols-outlined text-[15px]">schedule</span>
+                Duration: {{ editDurationDisplayLabel() }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- From Time -->
+              <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
+                <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
+                  From
+                </span>
+                <div class="flex items-center gap-1">
+                  <!-- Hours -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="editFromHour()"
+                      (ngModelChange)="editFromHour.set($event)"
+                      name="editFromHour"
+                      aria-label="Edit Start Hour"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (h of hours; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                  </div>
+                  <span class="text-on-surface-variant font-bold text-label-md px-0.5">:</span>
+                  <!-- Minutes (jump of 5 mins) -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="editFromMinute()"
+                      (ngModelChange)="editFromMinute.set($event)"
+                      name="editFromMinute"
+                      aria-label="Edit Start Minute"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (m of minutes; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                  </div>
+                  <!-- AM/PM -->
+                  <div class="relative w-16">
+                    <select
+                      [ngModel]="editFromPeriod()"
+                      (ngModelChange)="editFromPeriod.set($event)"
+                      name="editFromPeriod"
+                      aria-label="Edit Start AM or PM"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-semibold text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (p of periods; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- To Time -->
+              <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
+                <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
+                  To
+                </span>
+                <div class="flex items-center gap-1">
+                  <!-- Hours -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="editToHour()"
+                      (ngModelChange)="editToHour.set($event)"
+                      name="editToHour"
+                      aria-label="Edit End Hour"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (h of hours; track h) {
+                        <option [value]="h">{{ h }}</option>
+                      }
+                    </select>
+                  </div>
+                  <span class="text-on-surface-variant font-bold text-label-md px-0.5">:</span>
+                  <!-- Minutes (jump of 5 mins) -->
+                  <div class="relative flex-1">
+                    <select
+                      [ngModel]="editToMinute()"
+                      (ngModelChange)="editToMinute.set($event)"
+                      name="editToMinute"
+                      aria-label="Edit End Minute"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-code-sm text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (m of minutes; track m) {
+                        <option [value]="m">{{ m }}</option>
+                      }
+                    </select>
+                  </div>
+                  <!-- AM/PM -->
+                  <div class="relative w-16">
+                    <select
+                      [ngModel]="editToPeriod()"
+                      (ngModelChange)="editToPeriod.set($event)"
+                      name="editToPeriod"
+                      aria-label="Edit End AM or PM"
+                      class="w-full px-1.5 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-semibold text-label-md text-center focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
+                      @for (p of periods; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">
+            <button
+              type="button"
+              (click)="editingTask.set(null)"
+              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition">
+              <span class="material-symbols-outlined text-[16px]">save</span>
+              <span>Save Changes</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+}

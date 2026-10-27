@@ -1,0 +1,92 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-on-surface/40 backdrop-blur-[2px] transition-opacity overflow-y-auto">
+  <div class="bg-surface-container-lowest w-full max-w-sm max-h-[90dvh] flex flex-col rounded-2xl shadow-2xl border border-outline-variant/50 overflow-hidden my-auto transform transition-all duration-200">
+    <!-- Modal Header with Google Branding -->
+    <div class="p-4 sm:p-5 pb-3 border-b border-outline-variant/20 shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+            <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" fill="#4285F4"></path>
+            <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" fill="#34A853"></path>
+            <path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12c0 2.03.45 3.84 1.25 5.42l4.03-3.15z" fill="#FBBC05"></path>
+            <path d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" fill="#EA4335"></path>
+          </svg>
+          <span class="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Sign in with Google</span>
+        </div>
+        <button
+          type="button"
+          (click)="closeModal.emit()"
+          class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+      <h3 class="text-headline-sm font-headline-sm text-on-surface mt-3">Authorize Flowday AI</h3>
+      <p class="text-body-sm text-on-surface-variant mt-0.5">
+        Flowday wants access to your Google Account to synchronize schedules and task lists.
+      </p>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="overflow-y-auto flex-1 overscroll-contain">
+      <!-- Account Selector -->
+      <div class="p-4 border-b border-outline-variant/20 bg-surface-container-low/40">
+        <p class="text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Choose an account</p>
+        <label class="flex items-center gap-3 p-2.5 rounded-xl border border-primary/40 bg-surface-container-lowest cursor-pointer shadow-xs">
+          <input checked class="text-primary focus:ring-primary w-4 h-4" name="google_account" type="radio" />
+          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            A
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-body-md font-medium text-on-surface leading-tight">Alex Developer</p>
+            <p class="text-label-sm text-on-surface-variant truncate">alex.developer&#64;gmail.com</p>
+          </div>
+        </label>
+        <button
+          type="button"
+          (click)="useAnotherAccount.emit()"
+          class="mt-2 flex items-center gap-2 px-2 py-1.5 text-label-sm text-primary hover:underline font-medium w-full text-left">
+          <span class="material-symbols-outlined text-[16px]">person_add</span>
+          <span>Use another account</span>
+        </button>
+      </div>
+
+      <!-- Permission Scopes Consent -->
+      <div class="p-4 space-y-3">
+        <p class="text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider">Requested Access</p>
+        <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
+          <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">calendar_month</span>
+          <div class="leading-tight">
+            <span class="font-medium">Google Calendar</span>
+            <p class="text-[12px] text-on-surface-variant">View and edit calendar events to schedule optimal focus blocks.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
+          <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">task_alt</span>
+          <div class="leading-tight">
+            <span class="font-medium">Google Tasks</span>
+            <p class="text-[12px] text-on-surface-variant">Sync tasks and deadlines with Google Tasks for bidirectional updates.</p>
+          </div>
+        </div>
+        <p class="text-[11px] text-on-surface-variant leading-snug pt-1">
+          By continuing, Google will share your name, email address, language preference, and profile picture with Flowday.
+        </p>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="p-4 pt-3 bg-surface-container-low/60 border-t border-outline-variant/30 flex items-center gap-2 shrink-0">
+      <button
+        type="button"
+        (click)="closeModal.emit()"
+        class="flex-1 py-2 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface text-label-md font-medium hover:bg-surface-container transition-colors active:scale-95">
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="authorize.emit()"
+        class="flex-[1.5] py-2 rounded-xl bg-primary text-on-primary text-label-md font-medium flex items-center justify-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-[16px]">verified_user</span>
+        <span>Allow & Connect</span>
+      </button>
+    </div>
+  </div>
+</div>

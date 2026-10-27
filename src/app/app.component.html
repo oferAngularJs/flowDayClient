@@ -1,0 +1,32 @@
+<div class="h-full min-h-dvh flex flex-col font-body-md bg-background text-on-surface antialiased select-none">
+  <app-top-bar
+    [currentView]="currentView()"
+    [isConnected]="authService.isConnected()"
+    [googleUser]="authService.currentUser()"
+    [isSyncing]="apiService.isSyncing()"
+    (toggleView)="toggleView()"
+    (openGoogleModal)="isGoogleModalOpen.set(true)"
+    (disconnectGoogle)="authService.disconnectGoogleAccount()"
+    (openServerLogModal)="isServerLogOpen.set(true)" />
+
+  <app-toast />
+
+  <main class="flex-1 overflow-y-auto pb-28 px-3 sm:px-4 pt-3 max-w-xl mx-auto w-full transition-all duration-150">
+    @if (currentView() === 'dashboard') {
+      <app-dashboard (navigateToPlanner)="switchView('planner')" />
+    } @else {
+      <app-planner (navigateToDashboard)="switchView('dashboard')" />
+    }
+  </main>
+
+  <app-bottom-nav
+    [activeView]="currentView()"
+    (tabChange)="onTabChange($event)" />
+
+  @if (isGoogleModalOpen()) {
+    <app-google-oauth-modal
+      (closeModal)="isGoogleModalOpen.set(false)"
+      (authorize)="onAuthorizeGoogle()"
+      (useAnotherAccount)="toastService.show('Add another account selected')" />
+  }
+</div>

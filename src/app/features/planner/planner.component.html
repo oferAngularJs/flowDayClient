@@ -1,0 +1,42 @@
+@if (plannerService.weeklyPlan(); as plan) {
+  <section class="space-y-4 block transition-opacity duration-200">
+    <!-- View Navigation / Breadcrumb -->
+    <div class="flex items-center justify-between pb-1">
+      <button
+        type="button"
+        (click)="navigateToDashboard.emit()"
+        class="flex items-center gap-1 text-primary text-label-md font-label-md hover:underline active:scale-95 transition-transform">
+        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+        <span>Back to Dashboard</span>
+      </button>
+      <span class="text-[11px] font-code-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
+        {{ plan.aiModelVersion }}
+      </span>
+    </div>
+
+    <!-- Title Header -->
+    <div>
+      <h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface tracking-tight">Weekly AI Planner</h1>
+      <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Smart goal breakdown & work distribution engine</p>
+    </div>
+
+    <!-- Active Planning Target Card -->
+    <app-planning-target
+      [targetGoal]="plan.targetGoal"
+      [weekRange]="plan.weekRangeLabel"
+      [syncStatus]="plan.syncStatusLabel"
+      [isAnalyzing]="plannerService.isAnalyzing()"
+      (reanalyze)="plannerService.reanalyzeGoal()" />
+
+    <!-- Weekly Capacity Budget Card with Bar Chart -->
+    <app-capacity-budget [capacity]="plan.capacity" />
+
+    <!-- Proposed Breakdown Task List & Action Footer -->
+    <app-proposed-tasks
+      [tasks]="plan.proposedTasks"
+      [selectedCount]="plannerService.selectedTaskCount()"
+      (toggleTaskSelection)="plannerService.toggleTaskSelection($event)"
+      (adjustFilters)="plannerService.adjustFilters()"
+      (acceptPlan)="onAcceptPlan()" />
+  </section>
+}
