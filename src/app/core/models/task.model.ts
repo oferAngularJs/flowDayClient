@@ -54,4 +54,5 @@ export interface CreateTaskPayload {
   scheduledEnd: string;
   durationMinutes: number;
   category: string;
+  dueDate?: string;
 }

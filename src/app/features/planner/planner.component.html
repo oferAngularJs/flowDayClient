@@ -5,9 +5,9 @@
       <button
         type="button"
         (click)="navigateToDashboard.emit()"
-        class="flex items-center gap-1 text-primary text-label-md font-label-md hover:underline active:scale-95 transition-transform">
-        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-        <span>Back to Dashboard</span>
+        class="flex items-center gap-1 text-primary text-label-md font-label-md hover:underline active:scale-95 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[16px] rtl:rotate-180">arrow_back</span>
+        <span>{{ langService.translations().backToDashboard }}</span>
       </button>
       <span class="text-[11px] font-code-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
         {{ plan.aiModelVersion }}
@@ -16,8 +16,12 @@
 
     <!-- Title Header -->
     <div>
-      <h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface tracking-tight">Weekly AI Planner</h1>
-      <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Smart goal breakdown & work distribution engine</p>
+      <h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface tracking-tight">
+        {{ langService.translations().weeklyAiPlanner }}
+      </h1>
+      <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+        {{ langService.translations().plannerSubtitle }}
+      </p>
     </div>
 
     <!-- Active Planning Target Card -->

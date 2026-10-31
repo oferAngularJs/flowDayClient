@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
 import { PlannerService } from '../../core/services/planner.service';
+import { LanguageService } from '../../core/services/language.service';
 import { PlanningTargetComponent } from './components/planning-target/planning-target.component';
 import { CapacityBudgetComponent } from './components/capacity-budget/capacity-budget.component';
 import { ProposedTasksComponent } from './components/proposed-tasks/proposed-tasks.component';
@@ -13,6 +14,7 @@ import { ProposedTasksComponent } from './components/proposed-tasks/proposed-tas
 })
 export class PlannerComponent {
   readonly plannerService = inject(PlannerService);
+  readonly langService = inject(LanguageService);
   readonly navigateToDashboard = output<void>();
 
   onAcceptPlan(): void {

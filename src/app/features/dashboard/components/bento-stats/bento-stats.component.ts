@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { DashboardStats } from '../../../../core/models/task.model';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-bento-stats',
@@ -13,7 +14,7 @@ import { DashboardStats } from '../../../../core/models/task.model';
         class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/40 flex flex-col justify-between cursor-pointer hover:border-primary/50 hover:bg-surface-container-low/40 transition-all group shadow-xs"
         title="Click to view today's tasks">
         <div class="flex items-center justify-between text-on-surface-variant group-hover:text-primary transition-colors">
-          <span class="text-label-sm font-label-sm uppercase tracking-wider">Today's Tasks</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider">{{ langService.translations().todaysTasks }}</span>
           <span class="material-symbols-outlined text-[16px]">checklist</span>
         </div>
         <div class="mt-2 flex items-baseline justify-between">
@@ -22,7 +23,7 @@ import { DashboardStats } from '../../../../core/models/task.model';
             <span class="text-body-sm font-body-sm text-on-surface-variant">total</span>
           </div>
           <span class="text-[11px] font-label-sm text-primary flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
-            View <span class="material-symbols-outlined text-[13px]">arrow_downward</span>
+            <span class="material-symbols-outlined text-[13px]">arrow_downward</span>
           </span>
         </div>
       </div>
@@ -30,7 +31,7 @@ import { DashboardStats } from '../../../../core/models/task.model';
       <!-- Metric 2: Completed Rate -->
       <div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/40 flex flex-col justify-between">
         <div class="flex items-center justify-between text-on-surface-variant">
-          <span class="text-label-sm font-label-sm uppercase tracking-wider">Completed</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider">{{ langService.translations().completed }}</span>
           <span class="material-symbols-outlined text-[16px] text-primary">pie_chart</span>
         </div>
         <div class="mt-2 flex items-baseline justify-between">
@@ -48,12 +49,12 @@ import { DashboardStats } from '../../../../core/models/task.model';
       <!-- Metric 3: Workload Left -->
       <div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/40 flex flex-col justify-between">
         <div class="flex items-center justify-between text-on-surface-variant">
-          <span class="text-label-sm font-label-sm uppercase tracking-wider">Workload Left</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider">{{ langService.translations().workloadLeft }}</span>
           <span class="material-symbols-outlined text-[16px]">timelapse</span>
         </div>
         <div class="mt-2 flex items-baseline justify-between">
           <span class="text-headline-md font-headline-md text-on-surface">{{ stats().workloadLeftLabel }}</span>
-          <span class="text-[11px] font-label-sm text-on-surface-variant">remaining</span>
+          <span class="text-[11px] font-label-sm text-on-surface-variant">{{ langService.translations().tasksRemaining }}</span>
         </div>
       </div>
 
@@ -72,20 +73,20 @@ import { DashboardStats } from '../../../../core/models/task.model';
           [class.opacity-15]="stats().overdueCount > 0"
           [class.bg-surface-container]="stats().overdueCount === 0"></div>
         <div class="flex items-center justify-between" [class.text-error]="stats().overdueCount > 0" [class.text-on-surface-variant]="stats().overdueCount === 0">
-          <span class="text-label-sm font-label-sm uppercase tracking-wider">Overdue</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider">{{ langService.translations().overdue }}</span>
           <span class="material-symbols-outlined text-[16px]">{{ stats().overdueCount > 0 ? 'warning' : 'check_circle' }}</span>
         </div>
         <div class="mt-2 flex flex-col gap-0.5">
           <div class="flex flex-wrap items-baseline justify-between gap-1">
             <span class="text-headline-md font-headline-md" [class.text-error]="stats().overdueCount > 0" [class.text-on-surface]="stats().overdueCount === 0">
-              {{ stats().overdueCount }} {{ stats().overdueCount === 1 ? 'task' : 'tasks' }}
+              {{ stats().overdueCount }}
             </span>
             @if (stats().overdueCount > 0) {
               <span class="text-[10px] font-label-sm bg-error/10 text-error px-1.5 py-0.5 rounded font-medium group-hover:bg-error group-hover:text-white transition-colors flex items-center gap-0.5 shrink-0">
-                Jump <span class="material-symbols-outlined text-[12px]">arrow_downward</span>
+                <span class="material-symbols-outlined text-[12px]">arrow_downward</span>
               </span>
             } @else {
-              <span class="text-[10px] font-label-sm bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded shrink-0">All good</span>
+              <span class="text-[10px] font-label-sm bg-surface-container text-on-surface-variant px-1.5 py-0.5 rounded shrink-0">OK</span>
             }
           </div>
           @if (stats().overdueTaskTitle && stats().overdueCount > 0) {
@@ -99,6 +100,7 @@ import { DashboardStats } from '../../../../core/models/task.model';
   `
 })
 export class BentoStatsComponent {
+  readonly langService = inject(LanguageService);
   readonly stats = input.required<DashboardStats>();
   readonly scrollToTodayTasks = output<void>();
   readonly scrollToOverdueTask = output<void>();

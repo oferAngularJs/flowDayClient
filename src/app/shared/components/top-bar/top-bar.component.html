@@ -19,24 +19,36 @@
           </span>
           @if (isSyncing()) {
             <span class="text-[9px] font-code-sm px-1.5 py-0.5 rounded bg-surface-container text-primary animate-pulse hidden sm:inline">
-              Syncing...
+              {{ langService.translations().syncing }}
             </span>
           }
         </div>
         <span class="text-[10px] text-on-surface-variant font-medium leading-none tracking-tight truncate">
-          Help you flow the day
+          {{ langService.translations().brandTagline }}
         </span>
       </div>
     </div>
 
     <div class="flex items-center gap-1.5">
-      <!-- Quick Switch Pill Badge -->
+      <!-- Language Selector Button (EN / HE) - Placed to the left of the planner switch button -->
+      <button
+        type="button"
+        (click)="langService.toggleLanguage()"
+        title="Switch language (EN / HE)"
+        class="flex items-center gap-1 px-2 py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/60 shadow-xs active:scale-95 transition-all text-on-surface shrink-0 cursor-pointer">
+        <span class="material-symbols-outlined text-[15px] text-primary">translate</span>
+        <span class="text-[11px] font-bold tracking-wider font-code-sm uppercase">
+          {{ langService.currentLanguage() }}
+        </span>
+      </button>
+
+      <!-- Quick Switch Pill Badge (Planner / Dashboard) -->
       <button
         type="button"
         (click)="toggleView.emit()"
-        class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-primary text-label-sm font-label-sm border border-outline-variant/40 active:scale-95 transition-transform duration-150 shrink-0">
+        class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container text-primary text-label-sm font-label-sm border border-outline-variant/40 active:scale-95 transition-transform duration-150 shrink-0 cursor-pointer">
         <span class="material-symbols-outlined text-[14px]">auto_awesome</span>
-        <span>{{ currentView() === 'dashboard' ? 'Planner' : 'Dashboard' }}</span>
+        <span>{{ currentView() === 'dashboard' ? langService.translations().planner : langService.translations().dashboard }}</span>
       </button>
 
       <!-- Google Account Connect / Profile Button -->
@@ -46,14 +58,16 @@
             type="button"
             (click)="openGoogleModal.emit()"
             title="Connect Google Calendar & Tasks"
-            class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 shadow-sm active:scale-95 transition-all duration-150 text-on-surface shrink-0">
+            class="flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 shadow-sm active:scale-95 transition-all duration-150 text-on-surface shrink-0 cursor-pointer">
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" fill="#4285F4"></path>
               <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" fill="#34A853"></path>
               <path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12c0 2.03.45 3.84 1.25 5.42l4.03-3.15z" fill="#FBBC05"></path>
               <path d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" fill="#EA4335"></path>
             </svg>
-            <span class="text-label-sm font-label-sm font-medium text-on-surface hidden sm:inline">Connect</span>
+            <span class="text-label-sm font-label-sm font-medium text-on-surface hidden sm:inline">
+              {{ langService.translations().connectGoogle }}
+            </span>
           </button>
         } @else {
           <button
@@ -86,15 +100,15 @@
             <div class="py-1.5 space-y-1">
               <div class="flex items-center justify-between px-2 py-1 text-[11px] text-on-surface-variant">
                 <span class="flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span> Google Calendar
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span> {{ langService.translations().googleCalendar }}
                 </span>
-                <span class="font-code-sm text-primary">Active</span>
+                <span class="font-code-sm text-primary">{{ langService.translations().active }}</span>
               </div>
               <div class="flex items-center justify-between px-2 py-1 text-[11px] text-on-surface-variant">
                 <span class="flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span> Google Tasks
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span> {{ langService.translations().googleTasks }}
                 </span>
-                <span class="font-code-sm text-primary">Active</span>
+                <span class="font-code-sm text-primary">{{ langService.translations().active }}</span>
               </div>
             </div>
             <div class="pt-1.5 border-t border-outline-variant/30 flex flex-col gap-1">
@@ -103,14 +117,14 @@
                 (click)="onSwitchAccount()"
                 class="w-full text-left px-2 py-1.5 text-label-sm rounded-lg hover:bg-surface-container text-on-surface flex items-center gap-2 transition-colors">
                 <span class="material-symbols-outlined text-[16px] text-on-surface-variant">switch_account</span>
-                <span>Switch Account</span>
+                <span>{{ langService.translations().switchAccount }}</span>
               </button>
               <button
                 type="button"
                 (click)="onDisconnect()"
                 class="w-full text-left px-2 py-1.5 text-label-sm rounded-lg hover:bg-error/10 text-error flex items-center gap-2 transition-colors">
                 <span class="material-symbols-outlined text-[16px]">link_off</span>
-                <span>Disconnect Google</span>
+                <span>{{ langService.translations().disconnectGoogle }}</span>
               </button>
             </div>
           </div>

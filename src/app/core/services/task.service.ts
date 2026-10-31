@@ -175,6 +175,7 @@ export class TaskService {
   }
 
   createNewTask(payload: CreateTaskPayload): void {
+    const today = new Date().toISOString().split('T')[0];
     const newTask: TaskItem = {
       id: `task-${Date.now()}`,
       title: payload.title,
@@ -186,8 +187,8 @@ export class TaskService {
       durationLabel: formatDuration(payload.durationMinutes),
       category: payload.category,
       completedSubtasks: 0,
-      totalSubtasks: 2,
-      dueDate: '2026-10-24'
+      totalSubtasks: 0,
+      dueDate: payload.dueDate || today
     };
 
     this.api.post<TaskItem, CreateTaskPayload>('/tasks', payload, newTask).subscribe((created) => {

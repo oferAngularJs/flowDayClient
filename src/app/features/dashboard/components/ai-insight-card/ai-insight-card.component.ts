@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { AiInsight } from '../../../../core/models/task.model';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-ai-insight-card',
@@ -13,7 +14,9 @@ import { AiInsight } from '../../../../core/models/task.model';
         </div>
         <div class="flex-1">
           <div class="flex items-center justify-between">
-            <span class="text-label-sm font-label-sm font-bold text-primary uppercase tracking-wide">Flowday AI Insight</span>
+            <span class="text-label-sm font-label-sm font-bold text-primary uppercase tracking-wide">
+              {{ langService.translations().flowdayAi }}
+            </span>
             <span class="text-[11px] font-code-sm text-on-surface-variant">{{ insight().timestampLabel }}</span>
           </div>
           <p class="text-body-sm font-body-sm text-on-surface mt-1 leading-snug">
@@ -27,15 +30,15 @@ import { AiInsight } from '../../../../core/models/task.model';
             <button
               type="button"
               (click)="inspectPlanner.emit()"
-              class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-label-md flex items-center gap-1.5 active:scale-95 transition-all">
+              class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-label-md flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
               <span class="material-symbols-outlined text-[14px]">calendar_clock</span>
-              <span>Inspect in AI Planner</span>
+              <span>{{ langService.translations().inspect }}</span>
             </button>
             <button
               type="button"
               (click)="smartReschedule.emit()"
-              class="px-2.5 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface text-label-md font-label-md border border-outline-variant/50 hover:bg-surface-container-high transition-colors">
-              Smart Reschedule
+              class="px-2.5 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface text-label-md font-label-md border border-outline-variant/50 hover:bg-surface-container-high transition-colors cursor-pointer">
+              {{ langService.translations().reschedule }}
             </button>
           </div>
         </div>
@@ -44,6 +47,7 @@ import { AiInsight } from '../../../../core/models/task.model';
   `
 })
 export class AiInsightCardComponent {
+  readonly langService = inject(LanguageService);
   readonly insight = input.required<AiInsight>();
   readonly inspectPlanner = output<void>();
   readonly smartReschedule = output<void>();

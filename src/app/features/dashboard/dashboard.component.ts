@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
+import { GoogleAuthService } from '../../core/services/google-auth.service';
+import { LanguageService } from '../../core/services/language.service';
 import { BentoStatsComponent } from './components/bento-stats/bento-stats.component';
 import { AiInsightCardComponent } from './components/ai-insight-card/ai-insight-card.component';
 import { FocusTaskListComponent } from './components/focus-task-list/focus-task-list.component';
 import { TaskItem, TaskPriority } from '../../core/models/task.model';
 
 export interface TaskCategoryOption {
+  key: string;
   label: string;
   icon: string;
   colorClass: string;
@@ -14,12 +17,12 @@ export interface TaskCategoryOption {
 }
 
 export const TASK_CATEGORIES: TaskCategoryOption[] = [
-  { label: 'Work', icon: 'business_center', colorClass: 'text-blue-600', bgClass: 'bg-blue-50' },
-  { label: 'Personal', icon: 'person', colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50' },
-  { label: 'Engineering', icon: 'terminal', colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50' },
-  { label: 'Design', icon: 'palette', colorClass: 'text-purple-600', bgClass: 'bg-purple-50' },
-  { label: 'Product', icon: 'rocket_launch', colorClass: 'text-amber-600', bgClass: 'bg-amber-50' },
-  { label: 'Operations', icon: 'tune', colorClass: 'text-slate-600', bgClass: 'bg-slate-50' }
+  { key: 'personal', label: 'Personal', icon: 'person', colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50' },
+  { key: 'work', label: 'Work', icon: 'business_center', colorClass: 'text-blue-600', bgClass: 'bg-blue-50' },
+  { key: 'engineering', label: 'Engineering', icon: 'terminal', colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50' },
+  { key: 'design', label: 'Design', icon: 'palette', colorClass: 'text-purple-600', bgClass: 'bg-purple-50' },
+  { key: 'product', label: 'Product', icon: 'rocket_launch', colorClass: 'text-amber-600', bgClass: 'bg-amber-50' },
+  { key: 'operations', label: 'Operations', icon: 'tune', colorClass: 'text-slate-600', bgClass: 'bg-slate-50' }
 ];
 
 @Component({
@@ -31,21 +34,88 @@ export const TASK_CATEGORIES: TaskCategoryOption[] = [
 })
 export class DashboardComponent {
   readonly taskService = inject(TaskService);
+  readonly authService = inject(GoogleAuthService);
+  readonly langService = inject(LanguageService);
   readonly navigateToPlanner = output<void>();
+
+  // Date management: defaults to today, editable via calendar
+  readonly selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
+
+  readonly formattedDateLabel = computed(() => {
+    const raw = this.selectedDate();
+    if (!raw) return '';
+    const dateObj = new Date(raw + 'T00:00:00');
+    const locale = this.langService.isHebrew() ? 'he-IL' : 'en-US';
+    return dateObj.toLocaleDateString(locale, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+  });
+
+  openDatePicker(inputElement: HTMLInputElement): void {
+    if (typeof inputElement.showPicker === 'function') {
+      try {
+        inputElement.showPicker();
+      } catch {
+        inputElement.focus();
+      }
+    } else {
+      inputElement.focus();
+    }
+  }
+
+  // Dynamic user display name from email / auth / default
+  readonly userName = computed(() => {
+    const user = this.authService.currentUser();
+    if (user?.firstName) return user.firstName;
+    if (user?.name) return user.name.split(' ')[0];
+    if (user?.email) {
+      const emailPrefix = user.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+    return 'Alex';
+  });
+
+  // Dynamic time-based greeting (morning, afternoon, evening, night)
+  readonly greeting = computed(() => {
+    const hour = new Date().getHours();
+    const t = this.langService.translations();
+    if (hour >= 5 && hour < 12) {
+      return t.goodMorning;
+    } else if (hour >= 12 && hour < 17) {
+      return t.goodAfternoon;
+    } else if (hour >= 17 && hour < 21) {
+      return t.goodEvening;
+    } else {
+      return t.goodNight;
+    }
+  });
 
   readonly showNewTaskModal = signal<boolean>(false);
   readonly newTaskTitle = signal<string>('');
-  readonly newTaskCategory = signal<string>('Engineering');
-  readonly newTaskPriority = signal<TaskPriority>('HIGH');
+  readonly newTaskCategory = signal<string>('Personal');
+  readonly newTaskPriority = signal<TaskPriority>('MEDIUM');
+  readonly newTaskDate = signal<string>(new Date().toISOString().split('T')[0]);
   readonly isNewTaskCategoryDropdownOpen = signal<boolean>(false);
+
+  // Form validity for Create Task button
+  readonly isNewTaskValid = computed(() => {
+    return (
+      this.newTaskTitle().trim().length > 0 &&
+      !!this.newTaskPriority() &&
+      !!this.newTaskCategory()
+    );
+  });
 
   readonly highlightedTaskId = signal<string | null>(null);
 
   // Edit Task State
   readonly editingTask = signal<TaskItem | null>(null);
   readonly editTitle = signal<string>('');
-  readonly editCategory = signal<string>('Engineering');
-  readonly editPriority = signal<TaskPriority>('HIGH');
+  readonly editCategory = signal<string>('Personal');
+  readonly editPriority = signal<TaskPriority>('MEDIUM');
+  readonly editDate = signal<string>(new Date().toISOString().split('T')[0]);
   readonly isEditTaskCategoryDropdownOpen = signal<boolean>(false);
 
   toggleNewTaskCategoryDropdown(): void {
@@ -67,13 +137,49 @@ export class DashboardComponent {
 
   getCategoryInfo(name: string): TaskCategoryOption {
     return (
-      this.categories.find((c) => c.label.toLowerCase() === name?.toLowerCase()) || {
+      this.categories.find((c) => c.label.toLowerCase() === name?.toLowerCase() || c.key.toLowerCase() === name?.toLowerCase()) || {
+        key: 'general',
         label: name || 'General',
         icon: 'folder',
         colorClass: 'text-primary',
         bgClass: 'bg-surface-container'
       }
     );
+  }
+
+  getCategoryTranslatedLabel(categoryKeyOrLabel: string): string {
+    const key = (categoryKeyOrLabel || '').toLowerCase();
+    const t = this.langService.translations();
+    switch (key) {
+      case 'personal':
+        return t.personal;
+      case 'work':
+        return t.work;
+      case 'engineering':
+        return t.engineering;
+      case 'design':
+        return t.design;
+      case 'product':
+        return t.product;
+      case 'operations':
+        return t.operations;
+      default:
+        return categoryKeyOrLabel;
+    }
+  }
+
+  getPriorityTranslatedLabel(priority: TaskPriority): string {
+    const t = this.langService.translations();
+    switch (priority) {
+      case 'URGENT':
+        return t.urgent;
+      case 'HIGH':
+        return t.high;
+      case 'MEDIUM':
+        return t.medium;
+      case 'LOW':
+        return t.low;
+    }
   }
 
   getCurrentTimeSlot(): { hour: string; minute: string; period: 'AM' | 'PM' } {
@@ -207,8 +313,9 @@ export class DashboardComponent {
   openEditTask(task: TaskItem): void {
     this.editingTask.set(task);
     this.editTitle.set(task.title);
-    this.editCategory.set(task.category);
-    this.editPriority.set(task.priority);
+    this.editCategory.set(task.category || 'Personal');
+    this.editPriority.set(task.priority || 'MEDIUM');
+    this.editDate.set(task.dueDate || new Date().toISOString().split('T')[0]);
     this.isEditTaskCategoryDropdownOpen.set(false);
 
     const start = this.parseTimeString(task.scheduledStart);
@@ -235,6 +342,7 @@ export class DashboardComponent {
       title,
       priority: this.editPriority(),
       category: this.editCategory(),
+      dueDate: this.editDate(),
       scheduledStart,
       scheduledEnd,
       durationMinutes
@@ -260,12 +368,17 @@ export class DashboardComponent {
     this.toPeriod.set(time.period);
 
     this.newTaskTitle.set('');
+    this.newTaskPriority.set('MEDIUM');
+    this.newTaskCategory.set('Personal');
+    this.newTaskDate.set(new Date().toISOString().split('T')[0]);
     this.isNewTaskCategoryDropdownOpen.set(false);
     this.showNewTaskModal.set(true);
   }
 
   submitNewTask(): void {
-    const title = this.newTaskTitle().trim() || 'API Contract Validation';
+    if (!this.isNewTaskValid()) return;
+
+    const title = this.newTaskTitle().trim();
     const scheduledStart = `${this.fromHour()}:${this.fromMinute()} ${this.fromPeriod()}`;
     const scheduledEnd = `${this.toHour()}:${this.toMinute()} ${this.toPeriod()}`;
     const duration = this.calculatedDuration() > 0 ? this.calculatedDuration() : 15;
@@ -276,10 +389,17 @@ export class DashboardComponent {
       scheduledStart,
       scheduledEnd,
       durationMinutes: duration,
-      category: this.newTaskCategory()
+      category: this.newTaskCategory(),
+      dueDate: this.newTaskDate()
     });
+
     this.newTaskTitle.set('');
     this.isNewTaskCategoryDropdownOpen.set(false);
     this.showNewTaskModal.set(false);
+
+    // Give immediate visual feedback and ensure scroll to the newly created task
+    setTimeout(() => {
+      this.scrollToTodayTasks();
+    }, 100);
   }
 }

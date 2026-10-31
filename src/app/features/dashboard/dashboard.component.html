@@ -1,17 +1,34 @@
 @if (taskService.dashboardData(); as data) {
   <section class="space-y-4 block transition-opacity duration-200">
-    <!-- Greeting and Header Bar -->
-    <div class="flex items-start justify-between">
+    <!-- Greeting and Header Bar with Calendar Date Picker -->
+    <div class="flex items-start justify-between gap-3">
       <div>
-        <div class="flex items-center gap-2 text-on-surface-variant text-label-sm font-label-sm">
-          <span>{{ data.dateLabel }}</span>
+        <div class="flex items-center gap-2 text-on-surface-variant text-label-sm font-label-sm flex-wrap">
+          <!-- Calendar Date Picker Trigger Button -->
+          <div class="relative inline-flex items-center">
+            <button
+              type="button"
+              (click)="openDatePicker(dashboardDateInput)"
+              class="inline-flex items-center gap-1.5 cursor-pointer bg-surface-container hover:bg-surface-container-high active:scale-95 px-2.5 py-1 rounded-lg border border-outline-variant/60 text-primary transition-all shadow-xs"
+              title="Click to choose a date">
+              <span class="material-symbols-outlined text-[17px]">calendar_today</span>
+              <span class="font-medium text-on-surface">{{ formattedDateLabel() }}</span>
+              <span class="material-symbols-outlined text-[15px] text-on-surface-variant">arrow_drop_down</span>
+            </button>
+            <input
+              #dashboardDateInput
+              type="date"
+              [ngModel]="selectedDate()"
+              (ngModelChange)="selectedDate.set($event)"
+              class="absolute left-0 bottom-0 opacity-0 pointer-events-none w-0 h-0" />
+          </div>
           <span class="w-1 h-1 rounded-full bg-outline"></span>
           <span class="font-code-sm text-code-sm bg-surface-container px-1.5 py-0.5 rounded text-primary">
             {{ data.sprintCode }}
           </span>
         </div>
-        <h1 class="text-headline-lg-mobile font-headline-lg-mobile tracking-tight text-on-surface mt-0.5">
-          Good morning, {{ data.userName }}. Let's make today count.
+        <h1 class="text-headline-lg-mobile font-headline-lg-mobile tracking-tight text-on-surface mt-1.5">
+          {{ greeting() }}, {{ userName() }}. {{ langService.translations().makeTodayCount }}
         </h1>
       </div>
     </div>
@@ -20,18 +37,18 @@
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
         <span class="whitespace-nowrap px-2.5 py-1 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm shrink-0">
-          High Priority ({{ data.highPriorityCount }})
+          {{ langService.translations().highPriority }} ({{ data.highPriorityCount }})
         </span>
         <span class="whitespace-nowrap px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm shrink-0">
-          Workload: {{ data.totalWorkloadLabel }}
+          {{ langService.translations().workload }}: {{ data.totalWorkloadLabel }}
         </span>
       </div>
       <button
         type="button"
         (click)="openNewTaskModal()"
-        class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm active:scale-95 transition-transform duration-150">
+        class="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center gap-1 shadow-sm active:scale-95 transition-transform duration-150 cursor-pointer">
         <span class="material-symbols-outlined text-[16px]">add</span>
-        <span>New Task</span>
+        <span>{{ langService.translations().newTask }}</span>
       </button>
     </div>
 
@@ -72,64 +89,91 @@
               <span class="material-symbols-outlined text-[20px]">add_task</span>
             </div>
             <div>
-              <h3 class="text-headline-sm font-headline-sm text-on-surface">New Task</h3>
-              <p class="text-body-sm text-on-surface-variant">Create and schedule a priority task</p>
+              <h3 class="text-headline-sm font-headline-sm text-on-surface">{{ langService.translations().newTask }}</h3>
+              <p class="text-body-sm text-on-surface-variant">{{ langService.translations().createAndSchedule }}</p>
             </div>
           </div>
           <button
             type="button"
             (click)="showNewTaskModal.set(false)"
-            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors">
+            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <!-- Form Body -->
         <form (ngSubmit)="submitNewTask()" class="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 overscroll-contain">
-          <!-- Title Input -->
+          <!-- Title Input (Required) -->
           <div>
-            <label for="task-title" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Task Title
-            </label>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="task-title" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+                {{ langService.translations().taskTitle }} <span class="text-error font-bold">*</span>
+              </label>
+              @if (!newTaskTitle().trim()) {
+                <span class="text-[11px] text-error font-medium">{{ langService.translations().required }}</span>
+              }
+            </div>
             <input
               id="task-title"
               type="text"
               name="title"
               [ngModel]="newTaskTitle()"
               (ngModelChange)="newTaskTitle.set($event)"
-              placeholder="e.g., API Contract Validation"
+              [placeholder]="langService.translations().taskTitlePlaceholder"
               autofocus
               required
-              class="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition" />
+              class="w-full px-3.5 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition"
+              [class.border-error]="!newTaskTitle().trim() && newTaskTitle().length > 0"
+              [class.border-outline-variant]="newTaskTitle().trim().length > 0 || newTaskTitle().length === 0" />
           </div>
 
-          <!-- Priority Selector -->
+          <!-- Date Picker in Popup (Current Date by default, changeable) -->
+          <div>
+            <label for="new-task-date" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              {{ langService.translations().taskDate }}
+            </label>
+            <div
+              (click)="openDatePicker(newTaskDateInput)"
+              class="relative flex items-center cursor-pointer group">
+              <span class="material-symbols-outlined text-[18px] text-primary absolute left-3 pointer-events-none group-hover:scale-110 transition-transform">event</span>
+              <input
+                #newTaskDateInput
+                id="new-task-date"
+                type="date"
+                name="taskDate"
+                [ngModel]="newTaskDate()"
+                (ngModelChange)="newTaskDate.set($event)"
+                class="w-full pl-9 pr-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors" />
+            </div>
+          </div>
+
+          <!-- Priority Selector (Required, Default MEDIUM) -->
           <div>
             <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Priority
+              {{ langService.translations().priority }} <span class="text-error font-bold">*</span>
             </label>
             <div class="grid grid-cols-4 gap-2">
               @for (p of priorities; track p) {
                 <button
                   type="button"
                   (click)="newTaskPriority.set(p)"
-                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center"
+                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center cursor-pointer"
                   [class.bg-primary]="newTaskPriority() === p"
                   [class.text-on-primary]="newTaskPriority() === p"
                   [class.border-primary]="newTaskPriority() === p"
                   [class.bg-surface-container-low]="newTaskPriority() !== p"
                   [class.text-on-surface-variant]="newTaskPriority() !== p"
                   [class.border-outline-variant]="newTaskPriority() !== p">
-                  {{ p }}
+                  {{ getPriorityTranslatedLabel(p) }}
                 </button>
               }
             </div>
           </div>
 
-          <!-- Category Selector (Cool Dropdown with Icons) -->
+          <!-- Category Selector (Required, Default Personal) -->
           <div class="relative">
             <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Category
+              {{ langService.translations().category }} <span class="text-error font-bold">*</span>
             </label>
             <button
               type="button"
@@ -142,7 +186,7 @@
                   </span>
                 </div>
                 <span class="text-body-md font-medium text-on-surface">
-                  {{ newTaskCategory() }}
+                  {{ getCategoryTranslatedLabel(newTaskCategory()) }}
                 </span>
               </div>
               <span
@@ -160,7 +204,7 @@
                   <button
                     type="button"
                     (click)="newTaskCategory.set(cat.label); isNewTaskCategoryDropdownOpen.set(false)"
-                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left"
+                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left cursor-pointer"
                     [class.bg-surface-container-high]="newTaskCategory() === cat.label"
                     [class.hover:bg-surface-container]="newTaskCategory() !== cat.label">
                     <div class="flex items-center gap-2.5">
@@ -172,7 +216,7 @@
                         [class.font-semibold]="newTaskCategory() === cat.label"
                         [class.text-primary]="newTaskCategory() === cat.label"
                         [class.text-on-surface]="newTaskCategory() !== cat.label">
-                        {{ cat.label }}
+                        {{ getCategoryTranslatedLabel(cat.label) }}
                       </span>
                     </div>
                     @if (newTaskCategory() === cat.label) {
@@ -188,11 +232,11 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                Schedule Time
+                {{ langService.translations().scheduleTime }}
               </label>
               <span class="text-label-sm font-label-sm text-primary font-medium flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-md">
                 <span class="material-symbols-outlined text-[15px]">schedule</span>
-                Duration: {{ durationDisplayLabel() }}
+                {{ langService.translations().duration }}: {{ durationDisplayLabel() }}
               </span>
             </div>
 
@@ -200,7 +244,7 @@
               <!-- From Time -->
               <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
                 <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
-                  From
+                  {{ langService.translations().from }}
                 </span>
                 <div class="flex items-center gap-1">
                   <!-- Hours -->
@@ -249,7 +293,7 @@
               <!-- To Time -->
               <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
                 <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
-                  To
+                  {{ langService.translations().to }}
                 </span>
                 <div class="flex items-center gap-1">
                   <!-- Hours -->
@@ -302,14 +346,15 @@
             <button
               type="button"
               (click)="showNewTaskModal.set(false)"
-              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
-              Cancel
+              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer">
+              {{ langService.translations().cancel }}
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition">
+              [disabled]="!isNewTaskValid()"
+              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:opacity-95 active:enabled:scale-95">
               <span class="material-symbols-outlined text-[16px]">add</span>
-              <span>Create Task</span>
+              <span>{{ langService.translations().createTask }}</span>
             </button>
           </div>
         </form>
@@ -332,14 +377,14 @@
               <span class="material-symbols-outlined text-[20px]">edit_note</span>
             </div>
             <div>
-              <h3 class="text-headline-sm font-headline-sm text-on-surface">Edit Task</h3>
-              <p class="text-body-sm text-on-surface-variant">Update task name and schedule hours</p>
+              <h3 class="text-headline-sm font-headline-sm text-on-surface">{{ langService.translations().editTaskTitle }}</h3>
+              <p class="text-body-sm text-on-surface-variant">{{ langService.translations().editTaskSubtitle }}</p>
             </div>
           </div>
           <button
             type="button"
             (click)="editingTask.set(null)"
-            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors">
+            class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
@@ -349,7 +394,7 @@
           <!-- Title Input -->
           <div>
             <label for="edit-task-title" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Task Title
+              {{ langService.translations().taskTitle }}
             </label>
             <input
               id="edit-task-title"
@@ -357,30 +402,50 @@
               name="editTitle"
               [ngModel]="editTitle()"
               (ngModelChange)="editTitle.set($event)"
-              placeholder="e.g., Client Architecture Sign-off"
+              [placeholder]="langService.translations().taskTitlePlaceholder"
               autofocus
               required
               class="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition" />
           </div>
 
+          <!-- Edit Date Picker -->
+          <div>
+            <label for="edit-task-date" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              {{ langService.translations().taskDate }}
+            </label>
+            <div
+              (click)="openDatePicker(editTaskDateInput)"
+              class="relative flex items-center cursor-pointer group">
+              <span class="material-symbols-outlined text-[18px] text-primary absolute left-3 pointer-events-none group-hover:scale-110 transition-transform">event</span>
+              <input
+                #editTaskDateInput
+                id="edit-task-date"
+                type="date"
+                name="editTaskDate"
+                [ngModel]="editDate()"
+                (ngModelChange)="editDate.set($event)"
+                class="w-full pl-9 pr-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors" />
+            </div>
+          </div>
+
           <!-- Priority Selector -->
           <div>
             <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Priority
+              {{ langService.translations().priority }}
             </label>
             <div class="grid grid-cols-4 gap-2">
               @for (p of priorities; track p) {
                 <button
                   type="button"
                   (click)="editPriority.set(p)"
-                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center"
+                  class="py-1.5 px-2 rounded-lg text-label-sm font-semibold border transition text-center cursor-pointer"
                   [class.bg-primary]="editPriority() === p"
                   [class.text-on-primary]="editPriority() === p"
                   [class.border-primary]="editPriority() === p"
                   [class.bg-surface-container-low]="editPriority() !== p"
                   [class.text-on-surface-variant]="editPriority() !== p"
                   [class.border-outline-variant]="editPriority() !== p">
-                  {{ p }}
+                  {{ getPriorityTranslatedLabel(p) }}
                 </button>
               }
             </div>
@@ -389,7 +454,7 @@
           <!-- Category Selector (Cool Dropdown with Icons) -->
           <div class="relative">
             <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-              Category
+              {{ langService.translations().category }}
             </label>
             <button
               type="button"
@@ -402,7 +467,7 @@
                   </span>
                 </div>
                 <span class="text-body-md font-medium text-on-surface">
-                  {{ editCategory() }}
+                  {{ getCategoryTranslatedLabel(editCategory()) }}
                 </span>
               </div>
               <span
@@ -420,7 +485,7 @@
                   <button
                     type="button"
                     (click)="editCategory.set(cat.label); isEditTaskCategoryDropdownOpen.set(false)"
-                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left"
+                    class="w-full p-2 rounded-lg flex items-center justify-between transition-colors text-left cursor-pointer"
                     [class.bg-surface-container-high]="editCategory() === cat.label"
                     [class.hover:bg-surface-container]="editCategory() !== cat.label">
                     <div class="flex items-center gap-2.5">
@@ -432,7 +497,7 @@
                         [class.font-semibold]="editCategory() === cat.label"
                         [class.text-primary]="editCategory() === cat.label"
                         [class.text-on-surface]="editCategory() !== cat.label">
-                        {{ cat.label }}
+                        {{ getCategoryTranslatedLabel(cat.label) }}
                       </span>
                     </div>
                     @if (editCategory() === cat.label) {
@@ -448,11 +513,11 @@
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
-                Schedule Hours
+                {{ langService.translations().scheduleTime }}
               </label>
               <span class="text-label-sm font-label-sm text-primary font-medium flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-md">
                 <span class="material-symbols-outlined text-[15px]">schedule</span>
-                Duration: {{ editDurationDisplayLabel() }}
+                {{ langService.translations().duration }}: {{ editDurationDisplayLabel() }}
               </span>
             </div>
 
@@ -460,7 +525,7 @@
               <!-- From Time -->
               <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
                 <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
-                  From
+                  {{ langService.translations().from }}
                 </span>
                 <div class="flex items-center gap-1">
                   <!-- Hours -->
@@ -509,7 +574,7 @@
               <!-- To Time -->
               <div class="p-2.5 rounded-xl border border-outline-variant bg-surface-container-low">
                 <span class="block text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 font-medium">
-                  To
+                  {{ langService.translations().to }}
                 </span>
                 <div class="flex items-center gap-1">
                   <!-- Hours -->
@@ -562,14 +627,14 @@
             <button
               type="button"
               (click)="editingTask.set(null)"
-              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors">
-              Cancel
+              class="px-4 py-2 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer">
+              {{ langService.translations().cancel }}
             </button>
             <button
               type="submit"
-              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition">
+              class="px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md font-semibold flex items-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">save</span>
-              <span>Save Changes</span>
+              <span>{{ langService.translations().saveChanges }}</span>
             </button>
           </div>
         </form>

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { GoogleAccountProfile } from '../../../core/models/auth.model';
+import { LanguageService } from '../../../core/services/language.service';
 
 @Component({
   selector: 'app-top-bar',
@@ -8,6 +9,8 @@ import { GoogleAccountProfile } from '../../../core/models/auth.model';
   templateUrl: './top-bar.component.html'
 })
 export class TopBarComponent {
+  readonly langService = inject(LanguageService);
+
   readonly currentView = input.required<'dashboard' | 'planner'>();
   readonly isConnected = input.required<boolean>();
   readonly googleUser = input<GoogleAccountProfile | null>(null);
