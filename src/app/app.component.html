@@ -1,5 +1,7 @@
 <div class="h-full min-h-dvh flex flex-col font-body-md bg-background text-on-surface antialiased select-none">
+  <!-- Sticky Fixed Header across all pages & scrolling -->
   <app-top-bar
+    class="sticky top-0 z-40 block w-full"
     [currentView]="currentView()"
     [isConnected]="authService.isConnected()"
     [googleUser]="authService.currentUser()"
