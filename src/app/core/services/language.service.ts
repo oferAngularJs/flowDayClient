@@ -68,6 +68,7 @@ export interface TranslationDictionary {
   createTask: string;
   saveChanges: string;
   required: string;
+  minDurationError: string;
 
   // Categories
   personal: string;
@@ -162,6 +163,7 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   createTask: 'Create Task',
   saveChanges: 'Save Changes',
   required: 'Required',
+  minDurationError: 'Minimum duration is 30 minutes',
 
   personal: 'Personal',
   work: 'Work',
@@ -252,6 +254,7 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   createTask: 'צור משימה',
   saveChanges: 'שמור שינויים',
   required: 'שדה חובה',
+  minDurationError: 'משך הזמן המינימלי הוא 30 דקות',
 
   personal: 'אישי',
   work: 'עבודה',

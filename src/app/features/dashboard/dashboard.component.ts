@@ -99,12 +99,17 @@ export class DashboardComponent {
   readonly newTaskDate = signal<string>(new Date().toISOString().split('T')[0]);
   readonly isNewTaskCategoryDropdownOpen = signal<boolean>(false);
 
-  // Form validity for Create Task button
+  // Form validity for Create Task button: title, priority, category, and minimum 30 minutes duration
+  readonly isDurationValid = computed(() => {
+    return this.calculatedDuration() >= 30;
+  });
+
   readonly isNewTaskValid = computed(() => {
     return (
       this.newTaskTitle().trim().length > 0 &&
       !!this.newTaskPriority() &&
-      !!this.newTaskCategory()
+      !!this.newTaskCategory() &&
+      this.isDurationValid()
     );
   });
 
@@ -182,8 +187,8 @@ export class DashboardComponent {
     }
   }
 
-  getCurrentTimeSlot(): { hour: string; minute: string; period: 'AM' | 'PM' } {
-    const now = new Date();
+  getCurrentTimeSlot(addMinutes = 0): { hour: string; minute: string; period: 'AM' | 'PM' } {
+    const now = new Date(Date.now() + addMinutes * 60 * 1000);
     let hours24 = now.getHours();
     const rawMinutes = now.getMinutes();
 
@@ -203,19 +208,20 @@ export class DashboardComponent {
     return { hour, minute, period };
   }
 
-  private readonly defaultTime = this.getCurrentTimeSlot();
+  private readonly defaultFromTime = this.getCurrentTimeSlot(0);
+  private readonly defaultToTime = this.getCurrentTimeSlot(30);
 
   readonly hours = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
   readonly minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
   readonly periods: ('AM' | 'PM')[] = ['AM', 'PM'];
 
-  readonly fromHour = signal<string>(this.defaultTime.hour);
-  readonly fromMinute = signal<string>(this.defaultTime.minute);
-  readonly fromPeriod = signal<'AM' | 'PM'>(this.defaultTime.period);
+  readonly fromHour = signal<string>(this.defaultFromTime.hour);
+  readonly fromMinute = signal<string>(this.defaultFromTime.minute);
+  readonly fromPeriod = signal<'AM' | 'PM'>(this.defaultFromTime.period);
 
-  readonly toHour = signal<string>(this.defaultTime.hour);
-  readonly toMinute = signal<string>(this.defaultTime.minute);
-  readonly toPeriod = signal<'AM' | 'PM'>(this.defaultTime.period);
+  readonly toHour = signal<string>(this.defaultToTime.hour);
+  readonly toMinute = signal<string>(this.defaultToTime.minute);
+  readonly toPeriod = signal<'AM' | 'PM'>(this.defaultToTime.period);
 
   readonly calculatedDuration = computed(() => {
     let fromH = parseInt(this.fromHour(), 10) % 12;
@@ -358,14 +364,15 @@ export class DashboardComponent {
   }
 
   openNewTaskModal(): void {
-    const time = this.getCurrentTimeSlot();
-    this.fromHour.set(time.hour);
-    this.fromMinute.set(time.minute);
-    this.fromPeriod.set(time.period);
+    const fromTime = this.getCurrentTimeSlot(0);
+    const toTime = this.getCurrentTimeSlot(30);
+    this.fromHour.set(fromTime.hour);
+    this.fromMinute.set(fromTime.minute);
+    this.fromPeriod.set(fromTime.period);
 
-    this.toHour.set(time.hour);
-    this.toMinute.set(time.minute);
-    this.toPeriod.set(time.period);
+    this.toHour.set(toTime.hour);
+    this.toMinute.set(toTime.minute);
+    this.toPeriod.set(toTime.period);
 
     this.newTaskTitle.set('');
     this.newTaskPriority.set('MEDIUM');
@@ -381,7 +388,7 @@ export class DashboardComponent {
     const title = this.newTaskTitle().trim();
     const scheduledStart = `${this.fromHour()}:${this.fromMinute()} ${this.fromPeriod()}`;
     const scheduledEnd = `${this.toHour()}:${this.toMinute()} ${this.toPeriod()}`;
-    const duration = this.calculatedDuration() > 0 ? this.calculatedDuration() : 15;
+    const duration = this.calculatedDuration();
 
     this.taskService.createNewTask({
       title,
@@ -393,6 +400,14 @@ export class DashboardComponent {
       dueDate: this.newTaskDate()
     });
 
+    const newTaskId = this.taskService.pendingTasks()[0]?.id;
+    if (newTaskId) {
+      this.highlightedTaskId.set(newTaskId);
+      setTimeout(() => {
+        this.highlightedTaskId.set(null);
+      }, 3000);
+    }
+
     this.newTaskTitle.set('');
     this.isNewTaskCategoryDropdownOpen.set(false);
     this.showNewTaskModal.set(false);
@@ -400,6 +415,6 @@ export class DashboardComponent {
     // Give immediate visual feedback and ensure scroll to the newly created task
     setTimeout(() => {
       this.scrollToTodayTasks();
-    }, 100);
+    }, 50);
   }
 }
