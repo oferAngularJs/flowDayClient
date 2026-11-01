@@ -234,23 +234,11 @@
               <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
                 {{ langService.translations().scheduleTime }}
               </label>
-              <div
-                class="text-label-sm font-label-sm font-medium flex items-center gap-1 px-2 py-0.5 rounded-md transition-colors"
-                [class.bg-surface-container]="isDurationValid()"
-                [class.text-primary]="isDurationValid()"
-                [class.bg-error/15]="!isDurationValid()"
-                [class.text-error]="!isDurationValid()">
+              <span class="text-label-sm font-label-sm text-primary font-medium flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded-md">
                 <span class="material-symbols-outlined text-[15px]">schedule</span>
-                <span>{{ langService.translations().duration }}: {{ durationDisplayLabel() }}</span>
-              </div>
+                {{ langService.translations().duration }}: {{ durationDisplayLabel() }}
+              </span>
             </div>
-
-            @if (!isDurationValid()) {
-              <div class="flex items-center gap-1 text-[11px] text-error font-medium px-0.5">
-                <span class="material-symbols-outlined text-[14px]">info</span>
-                <span>{{ langService.translations().minDurationError }}</span>
-              </div>
-            }
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <!-- From Time -->
