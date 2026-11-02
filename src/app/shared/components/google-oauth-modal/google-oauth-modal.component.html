@@ -38,7 +38,7 @@
 
         <!-- Email Input -->
         <div>
-          <label for="google-email" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+          <label for="google-email" class="block text-center text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
             Email or Phone <span class="text-error font-bold">*</span>
           </label>
           <div class="relative flex items-center">
@@ -49,11 +49,11 @@
               name="email"
               [ngModel]="email()"
               (ngModelChange)="email.set($event); errorMessage.set('')"
-              placeholder="Enter your Gmail address (e.g. yourname@gmail.com)"
+              placeholder="Enter your Gmail"
               autocomplete="email"
               required
               autofocus
-              class="w-full pl-9.5 pr-8 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition"
+              class="w-full px-9 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md text-center transition"
               [class.border-error]="errorMessage() && !isEmailValid()"
               [class.border-outline-variant]="!errorMessage() || isEmailValid()" />
             @if (email().length > 0) {
@@ -70,7 +70,7 @@
 
         <!-- Password Input -->
         <div>
-          <label for="google-password" class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+          <label for="google-password" class="block text-center text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
             Password <span class="text-error font-bold">*</span>
           </label>
           <div class="relative flex items-center">
@@ -81,10 +81,10 @@
               name="password"
               [ngModel]="password()"
               (ngModelChange)="password.set($event); errorMessage.set('')"
-              placeholder="Enter your Google password"
+              placeholder="Enter password"
               autocomplete="current-password"
               required
-              class="w-full pl-9.5 pr-10 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md transition"
+              class="w-full px-9 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md text-center transition"
               [class.border-error]="errorMessage() && !password().trim()"
               [class.border-outline-variant]="!errorMessage() || !!password().trim()" />
             <button
