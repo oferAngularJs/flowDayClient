@@ -65,14 +65,13 @@ export class DashboardComponent {
     }
   }
 
-  // Dynamic user display name from email / auth / default
+  // Dynamic user display name: if connected with Google, shows the exact Google user name / Gmail prefix; otherwise defaults to 'Alex'
   readonly userName = computed(() => {
     const user = this.authService.currentUser();
+    if (user?.name) return user.name;
     if (user?.firstName) return user.firstName;
-    if (user?.name) return user.name.split(' ')[0];
     if (user?.email) {
-      const emailPrefix = user.email.split('@')[0];
-      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+      return user.email.split('@')[0];
     }
     return 'Alex';
   });

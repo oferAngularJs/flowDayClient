@@ -3,26 +3,44 @@ import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
 import { GoogleAccountProfile, GoogleAuthResponse } from '../models/auth.model';
 
-const DEFAULT_GOOGLE_PROFILE: GoogleAccountProfile = {
-  id: 'google-usr-alex-01',
-  name: 'Alex Dev',
-  firstName: 'Alex',
-  email: 'alex.developer@gmail.com',
-  avatarInitial: 'A',
-  calendarSynced: true,
-  tasksSynced: true,
-  accessToken: 'ya29.flowday-oauth-token'
-};
+const STORAGE_KEY_GOOGLE_USER = 'flowday_google_user';
+const STORAGE_KEY_GOOGLE_TOKEN = 'flowday_google_token';
+
+function getStoredGoogleUser(): GoogleAccountProfile | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_GOOGLE_USER);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch {}
+  return null;
+}
+
+function saveStoredGoogleUser(user: GoogleAccountProfile | null): void {
+  try {
+    if (user) {
+      localStorage.setItem(STORAGE_KEY_GOOGLE_USER, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_KEY_GOOGLE_USER);
+    }
+  } catch {}
+}
 
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
 
-  readonly isConnected = signal<boolean>(false);
-  readonly currentUser = signal<GoogleAccountProfile | null>(null);
+  private readonly initialUser = getStoredGoogleUser();
+  readonly isConnected = signal<boolean>(!!this.initialUser);
+  readonly currentUser = signal<GoogleAccountProfile | null>(this.initialUser);
 
   checkAuthStatus(): void {
+    const stored = getStoredGoogleUser();
+    if (stored) {
+      this.isConnected.set(true);
+      this.currentUser.set(stored);
+    }
     this.api
       .get<GoogleAuthResponse>('/auth/google/status', {
         connected: this.isConnected(),
@@ -30,39 +48,76 @@ export class GoogleAuthService {
         syncedAt: new Date().toISOString()
       })
       .subscribe((res) => {
-        this.isConnected.set(res.connected);
-        this.currentUser.set(res.profile);
+        // Only update if server returned valid profile or keep current stored
+        if (res.connected && res.profile) {
+          this.isConnected.set(true);
+          this.currentUser.set(res.profile);
+          saveStoredGoogleUser(res.profile);
+        }
+      });
+  }
+
+  authorizeWithCredentials(email: string, _password?: string): void {
+    const trimmedEmail = email.trim();
+    const emailPrefix = trimmedEmail.split('@')[0] || 'User';
+    // Format a friendly display name and first name from email prefix: e.g. ofer.k -> Ofer
+    const cleanPrefix = emailPrefix.replace(/[._\-+0-9]+/g, ' ').trim() || emailPrefix;
+    const parts = cleanPrefix.split(' ').filter(Boolean);
+    const capitalizedParts = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1));
+    const fullName = capitalizedParts.join(' ') || emailPrefix;
+    const firstName = capitalizedParts[0] || emailPrefix;
+    const initial = firstName.charAt(0).toUpperCase() || 'U';
+
+    const profile: GoogleAccountProfile = {
+      id: `google-usr-${Date.now()}`,
+      name: fullName,
+      firstName,
+      email: trimmedEmail,
+      avatarInitial: initial,
+      calendarSynced: true,
+      tasksSynced: true,
+      accessToken: `ya29.flowday-${Date.now()}`
+    };
+
+    const fallbackResponse: GoogleAuthResponse = {
+      connected: true,
+      profile,
+      syncedAt: new Date().toISOString()
+    };
+
+    // Synchronously update state immediately so the greeting updates right away
+    this.isConnected.set(true);
+    this.currentUser.set(profile);
+    saveStoredGoogleUser(profile);
+    try {
+      localStorage.setItem(STORAGE_KEY_GOOGLE_TOKEN, profile.accessToken || '');
+    } catch {}
+
+    this.api
+      .post<GoogleAuthResponse, { email: string; scopes: string[] }>(
+        '/auth/google/connect',
+        { email: trimmedEmail, scopes: ['calendar.events', 'tasks'] },
+        fallbackResponse
+      )
+      .subscribe((res) => {
+        if (res.profile) {
+          this.currentUser.set(res.profile);
+          saveStoredGoogleUser(res.profile);
+        }
+        this.toast.show(
+          `Connected as ${trimmedEmail}`,
+          'POST /api/v1/auth/google/connect'
+        );
       });
   }
 
   authorizeGoogleAccount(): void {
-    const fallbackResponse: GoogleAuthResponse = {
-      connected: true,
-      profile: DEFAULT_GOOGLE_PROFILE,
-      syncedAt: new Date().toISOString()
-    };
-
-    this.api
-      .post<GoogleAuthResponse, { scopes: string[] }>(
-        '/auth/google/connect',
-        { scopes: ['calendar.events', 'tasks'] },
-        fallbackResponse
-      )
-      .subscribe((res) => {
-        this.isConnected.set(res.connected);
-        this.currentUser.set(res.profile);
-        try {
-          if (res.profile?.accessToken) {
-            localStorage.setItem('flowday_google_token', res.profile.accessToken);
-          }
-        } catch {
-          // Ignore storage error in restricted sandboxes
-        }
-        this.toast.show(
-          'Successfully connected Google Calendar & Tasks',
-          'POST /api/v1/auth/google/connect'
-        );
-      });
+    const current = this.currentUser();
+    if (current?.email) {
+      this.authorizeWithCredentials(current.email);
+    } else {
+      this.authorizeWithCredentials('alex.developer@gmail.com');
+    }
   }
 
   disconnectGoogleAccount(): void {
@@ -75,11 +130,10 @@ export class GoogleAuthService {
       .subscribe(() => {
         this.isConnected.set(false);
         this.currentUser.set(null);
+        saveStoredGoogleUser(null);
         try {
-          localStorage.removeItem('flowday_google_token');
-        } catch {
-          // Ignore storage error
-        }
+          localStorage.removeItem(STORAGE_KEY_GOOGLE_TOKEN);
+        } catch {}
         this.toast.show('Google Account disconnected', 'POST /api/v1/auth/google/disconnect');
       });
   }

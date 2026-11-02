@@ -28,7 +28,7 @@
   @if (isGoogleModalOpen()) {
     <app-google-oauth-modal
       (closeModal)="isGoogleModalOpen.set(false)"
-      (authorize)="onAuthorizeGoogle()"
+      (authorize)="onAuthorizeGoogle($event)"
       (useAnotherAccount)="toastService.show('Add another account selected')" />
   }
 </div>
