@@ -50,7 +50,28 @@ export function computeDashboardStats(tasks: TaskItem[]): {
   };
 }
 
-const INITIAL_TASKS: TaskItem[] = [
+const STORAGE_KEY_TASKS = 'flowday_tasks';
+
+function getStoredTasks(): TaskItem[] | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_TASKS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function saveStoredTasks(tasks: TaskItem[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
+  } catch {}
+}
+
+const INITIAL_TASKS: TaskItem[] = getStoredTasks() || [
   {
     id: 'task-1',
     title: 'Client Architecture Sign-off',
@@ -151,20 +172,23 @@ export class TaskService {
     const newStatus = target.status === 'DONE' ? 'PENDING' : 'DONE';
     const updatedTask: TaskItem = { ...target, status: newStatus };
 
+    // Immediately update state synchronously
+    this.dashboardData.update((state) => {
+      const updatedTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
+      saveStoredTasks(updatedTasks);
+      const computed = computeDashboardStats(updatedTasks);
+      return {
+        ...state,
+        highPriorityCount: computed.highPriorityCount,
+        totalWorkloadLabel: computed.totalWorkloadLabel,
+        stats: computed.stats,
+        tasks: updatedTasks
+      };
+    });
+
     this.api
       .patch<TaskItem, { status: string }>(`/tasks/${taskId}/status`, { status: newStatus }, updatedTask)
       .subscribe((savedTask) => {
-        this.dashboardData.update((state) => {
-          const updatedTasks = state.tasks.map((t) => (t.id === taskId ? savedTask : t));
-          const computed = computeDashboardStats(updatedTasks);
-          return {
-            ...state,
-            highPriorityCount: computed.highPriorityCount,
-            totalWorkloadLabel: computed.totalWorkloadLabel,
-            stats: computed.stats,
-            tasks: updatedTasks
-          };
-        });
         this.toast.show(
           newStatus === 'DONE'
             ? `Task "${target.title}" marked as completed`
@@ -174,7 +198,7 @@ export class TaskService {
       });
   }
 
-  createNewTask(payload: CreateTaskPayload): void {
+  createNewTask(payload: CreateTaskPayload): TaskItem {
     const today = new Date().toISOString().split('T')[0];
     const newTask: TaskItem = {
       id: `task-${Date.now()}`,
@@ -191,20 +215,26 @@ export class TaskService {
       dueDate: payload.dueDate || today
     };
 
+    // Synchronously insert newTask into state immediately so it displays instantly on mobile/desktop
+    this.dashboardData.update((state) => {
+      const updatedTasks = [newTask, ...state.tasks];
+      saveStoredTasks(updatedTasks);
+      const computed = computeDashboardStats(updatedTasks);
+      return {
+        ...state,
+        highPriorityCount: computed.highPriorityCount,
+        totalWorkloadLabel: computed.totalWorkloadLabel,
+        stats: computed.stats,
+        tasks: updatedTasks
+      };
+    });
+
+    // Also persist through API
     this.api.post<TaskItem, CreateTaskPayload>('/tasks', payload, newTask).subscribe((created) => {
-      this.dashboardData.update((state) => {
-        const updatedTasks = [created, ...state.tasks];
-        const computed = computeDashboardStats(updatedTasks);
-        return {
-          ...state,
-          highPriorityCount: computed.highPriorityCount,
-          totalWorkloadLabel: computed.totalWorkloadLabel,
-          stats: computed.stats,
-          tasks: updatedTasks
-        };
-      });
       this.toast.show(`Created "${created.title}" on server`, 'POST /api/v1/tasks');
     });
+
+    return newTask;
   }
 
   updateTask(taskId: string, changes: Partial<TaskItem>): void {
@@ -220,18 +250,20 @@ export class TaskService {
       durationLabel: formatDuration(dur)
     };
 
+    this.dashboardData.update((state) => {
+      const updatedTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
+      saveStoredTasks(updatedTasks);
+      const computed = computeDashboardStats(updatedTasks);
+      return {
+        ...state,
+        highPriorityCount: computed.highPriorityCount,
+        totalWorkloadLabel: computed.totalWorkloadLabel,
+        stats: computed.stats,
+        tasks: updatedTasks
+      };
+    });
+
     this.api.patch<TaskItem, Partial<TaskItem>>(`/tasks/${taskId}`, changes, updatedTask).subscribe((savedTask) => {
-      this.dashboardData.update((state) => {
-        const updatedTasks = state.tasks.map((t) => (t.id === taskId ? savedTask : t));
-        const computed = computeDashboardStats(updatedTasks);
-        return {
-          ...state,
-          highPriorityCount: computed.highPriorityCount,
-          totalWorkloadLabel: computed.totalWorkloadLabel,
-          stats: computed.stats,
-          tasks: updatedTasks
-        };
-      });
       this.toast.show(`Updated "${savedTask.title}"`, `PATCH /api/v1/tasks/${taskId}`);
     });
   }

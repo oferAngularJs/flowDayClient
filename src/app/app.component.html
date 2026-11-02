@@ -1,7 +1,7 @@
 <div class="h-full min-h-dvh flex flex-col font-body-md bg-background text-on-surface antialiased select-none">
-  <!-- Sticky Fixed Header across all pages & scrolling -->
+  <!-- Pinned Fixed Header across all pages & scrolling -->
   <app-top-bar
-    class="sticky top-0 z-40 block w-full"
+    class="block w-full"
     [currentView]="currentView()"
     [isConnected]="authService.isConnected()"
     [googleUser]="authService.currentUser()"
@@ -13,7 +13,7 @@
 
   <app-toast />
 
-  <main class="flex-1 overflow-y-auto pb-28 px-3 sm:px-4 pt-3 max-w-xl mx-auto w-full transition-all duration-150">
+  <main class="flex-1 overflow-y-auto pb-28 px-3 sm:px-4 pt-16 max-w-xl mx-auto w-full transition-all duration-150">
     @if (currentView() === 'dashboard') {
       <app-dashboard (navigateToPlanner)="switchView('planner')" />
     } @else {

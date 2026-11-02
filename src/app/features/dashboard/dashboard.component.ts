@@ -390,7 +390,7 @@ export class DashboardComponent {
     const scheduledEnd = `${this.toHour()}:${this.toMinute()} ${this.toPeriod()}`;
     const duration = this.calculatedDuration();
 
-    this.taskService.createNewTask({
+    const createdTask = this.taskService.createNewTask({
       title,
       priority: this.newTaskPriority(),
       scheduledStart,
@@ -400,9 +400,8 @@ export class DashboardComponent {
       dueDate: this.newTaskDate()
     });
 
-    const newTaskId = this.taskService.pendingTasks()[0]?.id;
-    if (newTaskId) {
-      this.highlightedTaskId.set(newTaskId);
+    if (createdTask?.id) {
+      this.highlightedTaskId.set(createdTask.id);
       setTimeout(() => {
         this.highlightedTaskId.set(null);
       }, 3000);
