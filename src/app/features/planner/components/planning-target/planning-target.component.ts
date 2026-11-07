@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { LanguageService } from '../../../../core/services/language.service';
 
 @Component({
   selector: 'app-planning-target',
@@ -9,14 +10,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       <div class="flex items-start justify-between gap-2">
         <div class="flex items-center gap-1.5 text-primary text-label-sm font-label-sm font-semibold">
           <span class="material-symbols-outlined text-[16px]">flag</span>
-          <span>ACTIVE PLANNING TARGET</span>
+          <span>{{ langService.translations().activePlanningTarget }}</span>
         </div>
         <button
           type="button"
           (click)="reanalyze.emit()"
           class="flex items-center gap-1 text-label-sm font-label-sm text-on-surface-variant hover:text-primary transition-colors">
           <span class="material-symbols-outlined text-[14px]" [class.animate-spin]="isAnalyzing()">refresh</span>
-          <span>{{ isAnalyzing() ? 'Analyzing...' : 'Re-analyze' }}</span>
+          <span>{{ isAnalyzing() ? langService.translations().analyzing : langService.translations().reanalyze }}</span>
         </button>
       </div>
       <p class="text-body-md font-medium text-on-surface mt-1.5 leading-snug">
@@ -36,6 +37,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   `
 })
 export class PlanningTargetComponent {
+  readonly langService = inject(LanguageService);
   readonly targetGoal = input.required<string>();
   readonly weekRange = input.required<string>();
   readonly syncStatus = input.required<string>();

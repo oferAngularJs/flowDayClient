@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
+import { LanguageService } from './language.service';
 import { TaskService } from './task.service';
 import { ProposedPlanTask, WeeklyPlanResponse } from '../models/planner.model';
 import { TaskItem } from '../models/task.model';
@@ -84,6 +85,7 @@ const INITIAL_WEEKLY_PLAN: WeeklyPlanResponse = {
 export class PlannerService {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly lang = inject(LanguageService);
   private readonly taskService = inject(TaskService);
 
   readonly weeklyPlan = signal<WeeklyPlanResponse>(INITIAL_WEEKLY_PLAN);
@@ -138,7 +140,7 @@ export class PlannerService {
       .subscribe((res) => {
         this.weeklyPlan.set(res);
         this.isAnalyzing.set(false);
-        this.toast.show('AI re-analyzed workload & balanced Thursday capacity', 'POST /api/v1/planner/reanalyze');
+        this.toast.show(this.lang.translations().toastReanalyzed, 'POST /api/v1/planner/reanalyze');
       });
   }
 
@@ -150,14 +152,14 @@ export class PlannerService {
         { updated: true }
       )
       .subscribe(() => {
-        this.toast.show('Preferences updated', 'PATCH /api/v1/planner/preferences');
+        this.toast.show(this.lang.translations().toastPreferencesUpdated, 'PATCH /api/v1/planner/preferences');
       });
   }
 
   acceptPlan(onSuccessNavigate: () => void): void {
     const chosen: ProposedPlanTask[] = this.selectedTasks();
     if (chosen.length === 0) {
-      this.toast.show('Please select at least 1 task to accept.');
+      this.toast.show(this.lang.translations().toastSelectAtLeastOne);
       return;
     }
 
@@ -185,7 +187,7 @@ export class PlannerService {
 
         this.taskService.addAcceptedTasksFromPlanner(mappedTasks);
         this.toast.show(
-          `✨ ${res.acceptedCount} tasks accepted and added to Sprint W43!`,
+          this.lang.t('toastPlanAccepted', { count: res.acceptedCount }),
           'POST /api/v1/planner/accept'
         );
         setTimeout(() => onSuccessNavigate(), 500);

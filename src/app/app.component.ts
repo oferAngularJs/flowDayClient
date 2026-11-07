@@ -10,6 +10,7 @@ import { PlannerService } from './core/services/planner.service';
 import { GoogleAuthService } from './core/services/google-auth.service';
 import { ToastService } from './core/services/toast.service';
 import { ApiService } from './core/services/api.service';
+import { LanguageService } from './core/services/language.service';
 
 @Component({
   selector: 'app-root',
@@ -31,6 +32,7 @@ export class AppComponent implements OnInit {
   readonly authService = inject(GoogleAuthService);
   readonly toastService = inject(ToastService);
   readonly apiService = inject(ApiService);
+  readonly langService = inject(LanguageService);
 
   readonly currentView = signal<'dashboard' | 'planner'>('dashboard');
   readonly isGoogleModalOpen = signal<boolean>(false);
@@ -57,9 +59,9 @@ export class AppComponent implements OnInit {
     } else if (tab === 'planner' || tab === 'ai') {
       this.switchView('planner');
     } else if (tab === 'tasks') {
-      this.toastService.show('Tasks view opened', 'GET /api/v1/tasks');
+      this.toastService.show(this.langService.translations().toastTasksView, 'GET /api/v1/tasks');
     } else if (tab === 'analytics') {
-      this.toastService.show('Analytics view: 94% on-time velocity', 'GET /api/v1/analytics/velocity');
+      this.toastService.show(this.langService.translations().toastAnalyticsView, 'GET /api/v1/analytics/velocity');
     }
   }
 

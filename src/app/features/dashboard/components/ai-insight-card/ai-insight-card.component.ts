@@ -17,14 +17,14 @@ import { LanguageService } from '../../../../core/services/language.service';
             <span class="text-label-sm font-label-sm font-bold text-primary uppercase tracking-wide">
               {{ langService.translations().flowdayAi }}
             </span>
-            <span class="text-[11px] font-code-sm text-on-surface-variant">{{ insight().timestampLabel }}</span>
+            <span class="text-[11px] font-code-sm text-on-surface-variant">{{ insight().timestampLabel === 'Just now' ? langService.translations().justNow : insight().timestampLabel }}</span>
           </div>
           <p class="text-body-sm font-body-sm text-on-surface mt-1 leading-snug">
-            {{ insight().messagePrefix }}
+            {{ isDefaultInsight() ? langService.translations().insightPrefix : insight().messagePrefix }}
             <strong class="font-medium text-on-surface">
               {{ insight().highlightedTaskTitle }} {{ insight().highlightedTaskDuration }}
             </strong>
-            {{ insight().messageSuffix }}
+            {{ isDefaultInsight() ? langService.translations().insightSuffix : insight().messageSuffix }}
           </p>
           <div class="mt-3 flex items-center gap-2">
             <button
@@ -51,4 +51,9 @@ export class AiInsightCardComponent {
   readonly insight = input.required<AiInsight>();
   readonly inspectPlanner = output<void>();
   readonly smartReschedule = output<void>();
+
+  /** The built-in demo insight has a known Hebrew translation; server-sent insights are shown as-is. */
+  isDefaultInsight(): boolean {
+    return this.insight().messagePrefix === 'Thursday is getting busy. Consider moving';
+  }
 }

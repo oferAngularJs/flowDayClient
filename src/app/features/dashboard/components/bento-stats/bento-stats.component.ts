@@ -20,7 +20,7 @@ import { LanguageService } from '../../../../core/services/language.service';
         <div class="mt-2 flex items-baseline justify-between">
           <div class="flex items-baseline gap-1.5">
             <span class="text-headline-md font-headline-md text-on-surface">{{ stats().assignedToday }}</span>
-            <span class="text-body-sm font-body-sm text-on-surface-variant">total</span>
+            <span class="text-body-sm font-body-sm text-on-surface-variant">{{ langService.translations().total }}</span>
           </div>
           <span class="text-[11px] font-label-sm text-primary flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
             <span class="material-symbols-outlined text-[13px]">arrow_downward</span>
@@ -66,7 +66,7 @@ import { LanguageService } from '../../../../core/services/language.service';
         [class.hover:border-error]="stats().overdueCount > 0"
         [class.cursor-pointer]="stats().overdueCount > 0"
         [class.border-outline-variant]="stats().overdueCount === 0"
-        [title]="stats().overdueCount > 0 ? 'Click to jump to overdue task' : 'No overdue tasks'">
+        [title]="stats().overdueCount > 0 ? langService.translations().overdueJumpTitle : langService.translations().noOverdueTitle">
         <div
           class="absolute -right-3 -top-3 w-10 h-10 rounded-full"
           [class.bg-error]="stats().overdueCount > 0"

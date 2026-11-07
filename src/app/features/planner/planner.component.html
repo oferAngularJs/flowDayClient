@@ -10,7 +10,7 @@
         <span>{{ langService.translations().backToDashboard }}</span>
       </button>
       <span class="text-[11px] font-code-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
-        {{ plan.aiModelVersion }}
+        {{ langService.demo(plan.aiModelVersion) }}
       </span>
     </div>
 
@@ -27,8 +27,8 @@
     <!-- Active Planning Target Card -->
     <app-planning-target
       [targetGoal]="plan.targetGoal"
-      [weekRange]="plan.weekRangeLabel"
-      [syncStatus]="plan.syncStatusLabel"
+      [weekRange]="langService.demo(plan.weekRangeLabel)"
+      [syncStatus]="langService.demo(plan.syncStatusLabel)"
       [isAnalyzing]="plannerService.isAnalyzing()"
       (reanalyze)="plannerService.reanalyzeGoal()" />
 

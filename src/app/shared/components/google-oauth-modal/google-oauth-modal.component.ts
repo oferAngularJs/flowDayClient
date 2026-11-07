@@ -48,12 +48,12 @@ export class GoogleOauthModalComponent {
     const passwordVal = this.password().trim();
 
     if (!this.isEmailValid()) {
-      this.errorMessage.set('Please enter a valid email address (e.g. name@gmail.com)');
+      this.errorMessage.set(this.langService.translations().invalidEmailError);
       return;
     }
 
     if (!passwordVal) {
-      this.errorMessage.set('Please enter your password to authenticate');
+      this.errorMessage.set(this.langService.translations().passwordRequiredError);
       return;
     }
 

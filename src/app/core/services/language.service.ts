@@ -102,6 +102,54 @@ export interface TranslationDictionary {
   acceptPlan: string;
   adjustFilters: string;
   selected: string;
+
+  // Extra labels, Google sign-in modal & toasts
+  total: string;
+  overdueJumpTitle: string;
+  noOverdueTitle: string;
+  justNow: string;
+  insightPrefix: string;
+  insightSuffix: string;
+  activePlanningTarget: string;
+  capacityBudget: string;
+  dailyPlannedWorkload: string;
+  proposedTasksHeader: string;
+  selectedOf: string;
+  acceptPlanAdd: string;
+  signInWithGoogle: string;
+  authorizeFlowday: string;
+  oauthDescription: string;
+  emailOrPhone: string;
+  emailPlaceholder: string;
+  password: string;
+  passwordPlaceholder: string;
+  clearInput: string;
+  showPassword: string;
+  hidePassword: string;
+  requestedAccess: string;
+  calendarScopeDesc: string;
+  tasksScopeDesc: string;
+  oauthDisclaimer: string;
+  signingIn: string;
+  signInAndConnect: string;
+  invalidEmailError: string;
+  passwordRequiredError: string;
+  toastConnectedAs: string;
+  toastDisconnected: string;
+  toastReanalyzed: string;
+  toastPreferencesUpdated: string;
+  toastSelectAtLeastOne: string;
+  toastPlanAccepted: string;
+  toastTaskCompleted: string;
+  toastTaskReopened: string;
+  toastTaskCreated: string;
+  toastTaskUpdated: string;
+  toastSmartReschedule: string;
+  toastSortedEarliest: string;
+  toastSortedLatest: string;
+  toastAnotherAccount: string;
+  toastTasksView: string;
+  toastAnalyticsView: string;
 }
 
 const EN_TRANSLATIONS: TranslationDictionary = {
@@ -192,7 +240,53 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   proposedTasks: 'Proposed Breakdown Tasks',
   acceptPlan: 'Accept & Apply Plan',
   adjustFilters: 'Adjust Filters',
-  selected: 'selected'
+  selected: 'selected',
+  total: 'total',
+  overdueJumpTitle: 'Click to jump to overdue task',
+  noOverdueTitle: 'No overdue tasks',
+  justNow: 'Just now',
+  insightPrefix: 'Thursday is getting busy. Consider moving',
+  insightSuffix: 'to Friday to balance your focus capacity.',
+  activePlanningTarget: 'ACTIVE PLANNING TARGET',
+  capacityBudget: 'Capacity Budget',
+  dailyPlannedWorkload: 'DAILY PLANNED WORKLOAD',
+  proposedTasksHeader: 'Proposed Tasks ({count})',
+  selectedOf: 'Selected {selected} of {total}',
+  acceptPlanAdd: 'Accept Plan & Add {count} Tasks',
+  signInWithGoogle: 'Sign in with Google',
+  authorizeFlowday: 'Authorize Flowday AI',
+  oauthDescription: 'Flowday wants access to your Google Account to synchronize schedules and task lists.',
+  emailOrPhone: 'Email or Phone',
+  emailPlaceholder: 'Enter your Gmail',
+  password: 'Password',
+  passwordPlaceholder: 'Enter password',
+  clearInput: 'Clear input',
+  showPassword: 'Show password',
+  hidePassword: 'Hide password',
+  requestedAccess: 'Requested Access',
+  calendarScopeDesc: 'View and edit calendar events to schedule optimal focus blocks.',
+  tasksScopeDesc: 'Sync tasks and deadlines with Google Tasks for bidirectional updates.',
+  oauthDisclaimer: 'By signing in, Google will share your name, email address, language preference, and profile with Flowday.',
+  signingIn: 'Signing in...',
+  signInAndConnect: 'Sign in & Connect',
+  invalidEmailError: 'Please enter a valid email address (e.g. name@gmail.com)',
+  passwordRequiredError: 'Please enter your password to authenticate',
+  toastConnectedAs: 'Connected as {email}',
+  toastDisconnected: 'Google Account disconnected',
+  toastReanalyzed: 'AI re-analyzed workload & balanced Thursday capacity',
+  toastPreferencesUpdated: 'Preferences updated',
+  toastSelectAtLeastOne: 'Please select at least 1 task to accept.',
+  toastPlanAccepted: '✨ {count} tasks accepted and added to Sprint W43!',
+  toastTaskCompleted: 'Task "{title}" marked as completed',
+  toastTaskReopened: 'Task "{title}" reopened',
+  toastTaskCreated: 'Created "{title}" on server',
+  toastTaskUpdated: 'Updated "{title}"',
+  toastSmartReschedule: 'Smart Reschedule: "Review Q4 design spec" shifted to Friday morning',
+  toastSortedEarliest: 'Sorted tasks by earliest time',
+  toastSortedLatest: 'Sorted tasks by latest time',
+  toastAnotherAccount: 'Add another account selected',
+  toastTasksView: 'Tasks view opened',
+  toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
 const HE_TRANSLATIONS: TranslationDictionary = {
@@ -283,7 +377,77 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   proposedTasks: 'משימות מוצעות לביצוע',
   acceptPlan: 'אשר והחל תוכנית',
   adjustFilters: 'התאם סינונים',
-  selected: 'נבחרו'
+  selected: 'נבחרו',
+  total: 'סה״כ',
+  overdueJumpTitle: 'לחץ כדי לקפוץ למשימה באיחור',
+  noOverdueTitle: 'אין משימות באיחור',
+  justNow: 'עכשיו',
+  insightPrefix: 'יום חמישי מתמלא. שקול להעביר את',
+  insightSuffix: 'ליום שישי כדי לאזן את קיבולת הריכוז שלך.',
+  activePlanningTarget: 'יעד תכנון פעיל',
+  capacityBudget: 'תקציב קיבולת',
+  dailyPlannedWorkload: 'עומס עבודה יומי מתוכנן',
+  proposedTasksHeader: 'משימות מוצעות ({count})',
+  selectedOf: 'נבחרו {selected} מתוך {total}',
+  acceptPlanAdd: 'אשר תוכנית והוסף {count} משימות',
+  signInWithGoogle: 'התחברות עם Google',
+  authorizeFlowday: 'אישור גישה ל-Flowday AI',
+  oauthDescription: 'Flowday מבקש גישה לחשבון Google שלך כדי לסנכרן לוחות זמנים ורשימות משימות.',
+  emailOrPhone: 'אימייל או טלפון',
+  emailPlaceholder: 'הזן את כתובת ה-Gmail שלך',
+  password: 'סיסמה',
+  passwordPlaceholder: 'הזן סיסמה',
+  clearInput: 'נקה שדה',
+  showPassword: 'הצג סיסמה',
+  hidePassword: 'הסתר סיסמה',
+  requestedAccess: 'הרשאות מבוקשות',
+  calendarScopeDesc: 'צפייה ועריכה של אירועי יומן לתזמון בלוקי ריכוז אופטימליים.',
+  tasksScopeDesc: 'סנכרון משימות ומועדים עם Google Tasks לעדכונים דו-כיווניים.',
+  oauthDisclaimer: 'בהתחברות, Google ישתף עם Flowday את שמך, כתובת האימייל, העדפת השפה והפרופיל שלך.',
+  signingIn: 'מתחבר...',
+  signInAndConnect: 'התחבר וחבר',
+  invalidEmailError: 'נא להזין כתובת אימייל תקינה (לדוגמה name@gmail.com)',
+  passwordRequiredError: 'נא להזין סיסמה כדי להתחבר',
+  toastConnectedAs: 'מחובר כ-{email}',
+  toastDisconnected: 'חשבון Google נותק',
+  toastReanalyzed: 'הבינה המלאכותית ניתחה מחדש את העומס ואיזנה את יום חמישי',
+  toastPreferencesUpdated: 'ההעדפות עודכנו',
+  toastSelectAtLeastOne: 'נא לבחור לפחות משימה אחת לאישור.',
+  toastPlanAccepted: '✨ {count} משימות אושרו ונוספו לספרינט W43!',
+  toastTaskCompleted: 'המשימה "{title}" סומנה כהושלמה',
+  toastTaskReopened: 'המשימה "{title}" נפתחה מחדש',
+  toastTaskCreated: 'המשימה "{title}" נוצרה בשרת',
+  toastTaskUpdated: 'המשימה "{title}" עודכנה',
+  toastSmartReschedule: 'תזמון חכם: "Review Q4 design spec" הועברה ליום שישי בבוקר',
+  toastSortedEarliest: 'המשימות מוינו מהמוקדמת למאוחרת',
+  toastSortedLatest: 'המשימות מוינו מהמאוחרת למוקדמת',
+  toastAnotherAccount: 'נבחרה הוספת חשבון נוסף',
+  toastTasksView: 'תצוגת המשימות נפתחה',
+  toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
+};
+
+/**
+ * Hebrew versions of the built-in demo content (mock planner data used when no backend responds).
+ * Anything not listed here (e.g. real server data or user task titles) is shown unchanged.
+ */
+const HE_DEMO_CONTENT: Record<string, string> = {
+  'AI Model v2.4 Active': 'מודל AI v2.4 פעיל',
+  'This Week (Oct 21 - Oct 27)': 'השבוע (21 - 27 באוק׳)',
+  'Synced with GitHub & Cal': 'מסונכרן עם GitHub ויומן',
+  '/ 18h Total Free': '/ 18 שע׳ פנויות בסך הכל',
+  'Feasible (+3h 30m buffer)': 'ישים (מרווח של 3.5 שע׳)',
+  'Max 4h/day target': 'יעד של עד 4 שע׳ ביום',
+  Mon: 'ב׳',
+  Tue: 'ג׳',
+  Wed: 'ד׳',
+  Thu: 'ה׳',
+  Fri: 'ו׳',
+  'Thursday warning:': 'אזהרה ליום חמישי:',
+  'You already have 4h in sprint tickets. Flowday recommends auto-shifting 1h to Friday morning.':
+    'כבר יש לך 4 שעות במשימות ספרינט. Flowday ממליץ להעביר אוטומטית שעה אחת ליום שישי בבוקר.',
+  'Balanced schedule:': 'לוח זמנים מאוזן:',
+  '1h shifted from Thursday to Friday morning to prevent sprint overload.':
+    'שעה אחת הועברה מיום חמישי ליום שישי בבוקר כדי למנוע עומס יתר בספרינט.'
 };
 
 @Injectable({ providedIn: 'root' })
@@ -325,6 +489,19 @@ export class LanguageService {
     } catch {
       // Ignore
     }
+  }
+
+  /** Translate a key and fill {placeholders} with the given params. */
+  t(key: keyof TranslationDictionary, params: Record<string, string | number> = {}): string {
+    return this.translations()[key].replace(/\{(\w+)\}/g, (match, name: string) =>
+      name in params ? String(params[name]) : match
+    );
+  }
+
+  /** Translate known built-in demo content; other text passes through unchanged. */
+  demo(text: string | null | undefined): string {
+    if (!text) return '';
+    return this.isHebrew() ? (HE_DEMO_CONTENT[text] ?? text) : text;
   }
 
   toggleLanguage(): void {

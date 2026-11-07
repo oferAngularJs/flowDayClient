@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { LanguageService } from '../../../../core/services/language.service';
 import { ProposedPlanTask } from '../../../../core/models/planner.model';
 import { PriorityBadgeComponent } from '../../../../shared/components/priority-badge/priority-badge.component';
 
@@ -11,10 +12,10 @@ import { PriorityBadgeComponent } from '../../../../shared/components/priority-b
     <div class="space-y-2">
       <div class="flex items-center justify-between px-0.5">
         <h2 class="text-headline-sm font-headline-sm text-on-surface">
-          Proposed Tasks ({{ tasks().length }})
+          {{ langService.t('proposedTasksHeader', { count: tasks().length }) }}
         </h2>
         <span class="text-label-sm font-label-sm text-on-surface-variant">
-          Selected {{ selectedCount() }} of {{ tasks().length }}
+          {{ langService.t('selectedOf', { selected: selectedCount(), total: tasks().length }) }}
         </span>
       </div>
 
@@ -49,19 +50,20 @@ import { PriorityBadgeComponent } from '../../../../shared/components/priority-b
         type="button"
         (click)="adjustFilters.emit()"
         class="px-4 py-2.5 rounded-xl border border-outline-variant/60 bg-surface-container-lowest text-on-surface font-label-md text-label-md active:scale-95 transition-transform text-center sm:flex-1">
-        Adjust Filters
+        {{ langService.translations().adjustFilters }}
       </button>
       <button
         type="button"
         (click)="acceptPlan.emit()"
         class="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform sm:flex-[2]">
         <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
-        <span>Accept Plan & Add {{ selectedCount() }} Tasks</span>
+        <span>{{ langService.t('acceptPlanAdd', { count: selectedCount() }) }}</span>
       </button>
     </div>
   `
 })
 export class ProposedTasksComponent {
+  readonly langService = inject(LanguageService);
   readonly tasks = input.required<ProposedPlanTask[]>();
   readonly selectedCount = input.required<number>();
   readonly toggleTaskSelection = output<string>();

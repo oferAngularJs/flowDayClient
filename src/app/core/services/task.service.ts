@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
+import { LanguageService } from './language.service';
 import { CreateTaskPayload, DashboardSummary, TaskItem } from '../models/task.model';
 
 function formatDuration(mins: number): string {
@@ -142,6 +143,7 @@ const INITIAL_DASHBOARD_DATA: DashboardSummary = {
 export class TaskService {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly lang = inject(LanguageService);
 
   readonly dashboardData = signal<DashboardSummary>(INITIAL_DASHBOARD_DATA);
   readonly isLoading = signal<boolean>(false);
@@ -191,8 +193,8 @@ export class TaskService {
       .subscribe((savedTask) => {
         this.toast.show(
           newStatus === 'DONE'
-            ? `Task "${target.title}" marked as completed`
-            : `Task "${target.title}" reopened`,
+            ? this.lang.t('toastTaskCompleted', { title: target.title })
+            : this.lang.t('toastTaskReopened', { title: target.title }),
           `PATCH /api/v1/tasks/${taskId}/status`
         );
       });
@@ -231,7 +233,7 @@ export class TaskService {
 
     // Also persist through API
     this.api.post<TaskItem, CreateTaskPayload>('/tasks', payload, newTask).subscribe((created) => {
-      this.toast.show(`Created "${created.title}" on server`, 'POST /api/v1/tasks');
+      this.toast.show(this.lang.t('toastTaskCreated', { title: created.title }), 'POST /api/v1/tasks');
     });
 
     return newTask;
@@ -264,7 +266,7 @@ export class TaskService {
     });
 
     this.api.patch<TaskItem, Partial<TaskItem>>(`/tasks/${taskId}`, changes, updatedTask).subscribe((savedTask) => {
-      this.toast.show(`Updated "${savedTask.title}"`, `PATCH /api/v1/tasks/${taskId}`);
+      this.toast.show(this.lang.t('toastTaskUpdated', { title: savedTask.title }), `PATCH /api/v1/tasks/${taskId}`);
     });
   }
 
@@ -277,7 +279,7 @@ export class TaskService {
       )
       .subscribe(() => {
         this.toast.show(
-          'Smart Reschedule: "Review Q4 design spec" shifted to Friday morning',
+          this.lang.translations().toastSmartReschedule,
           'POST /api/v1/tasks/smart-reschedule'
         );
       });
@@ -300,7 +302,9 @@ export class TaskService {
   toggleSortOrder(): void {
     this.sortAscending.update((v) => !v);
     this.toast.show(
-      this.sortAscending() ? 'Sorted tasks by earliest time' : 'Sorted tasks by latest time'
+      this.sortAscending()
+        ? this.lang.translations().toastSortedEarliest
+        : this.lang.translations().toastSortedLatest
     );
   }
 }

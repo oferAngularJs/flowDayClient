@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { ToastService } from './toast.service';
+import { LanguageService } from './language.service';
 import { GoogleAccountProfile, GoogleAuthResponse } from '../models/auth.model';
 
 const STORAGE_KEY_GOOGLE_USER = 'flowday_google_user';
@@ -30,6 +31,7 @@ function saveStoredGoogleUser(user: GoogleAccountProfile | null): void {
 export class GoogleAuthService {
   private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
+  private readonly lang = inject(LanguageService);
 
   private readonly initialUser = getStoredGoogleUser();
   readonly isConnected = signal<boolean>(!!this.initialUser);
@@ -105,7 +107,7 @@ export class GoogleAuthService {
           saveStoredGoogleUser(res.profile);
         }
         this.toast.show(
-          `Connected as ${trimmedEmail}`,
+          this.lang.t('toastConnectedAs', { email: trimmedEmail }),
           'POST /api/v1/auth/google/connect'
         );
       });
@@ -134,7 +136,7 @@ export class GoogleAuthService {
         try {
           localStorage.removeItem(STORAGE_KEY_GOOGLE_TOKEN);
         } catch {}
-        this.toast.show('Google Account disconnected', 'POST /api/v1/auth/google/disconnect');
+        this.toast.show(this.lang.translations().toastDisconnected, 'POST /api/v1/auth/google/disconnect');
       });
   }
 }

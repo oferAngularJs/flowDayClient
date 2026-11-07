@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { LanguageService } from '../../../../core/services/language.service';
 import { CapacityBudget } from '../../../../core/models/planner.model';
 
 @Component({
@@ -9,23 +10,23 @@ import { CapacityBudget } from '../../../../core/models/planner.model';
     <div class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant/40">
       <div class="flex items-center justify-between">
         <div>
-          <span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant">Capacity Budget</span>
+          <span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant">{{ langService.translations().capacityBudget }}</span>
           <div class="flex items-baseline gap-2 mt-0.5">
             <span class="text-headline-md font-headline-md text-on-surface">{{ capacity().plannedLabel }}</span>
-            <span class="text-body-sm font-body-sm text-on-surface-variant">{{ capacity().totalFreeLabel }}</span>
+            <span class="text-body-sm font-body-sm text-on-surface-variant">{{ langService.demo(capacity().totalFreeLabel) }}</span>
           </div>
         </div>
         <span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-primary font-semibold flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-primary"></span>
-          {{ capacity().statusLabel }}
+          {{ langService.demo(capacity().statusLabel) }}
         </span>
       </div>
 
       <!-- Mini Workload Distribution Bars -->
       <div class="mt-4 pt-3 border-t border-outline-variant/20">
         <div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant mb-2">
-          <span>DAILY PLANNED WORKLOAD</span>
-          <span>{{ capacity().maxDailyTarget }}</span>
+          <span>{{ langService.translations().dailyPlannedWorkload }}</span>
+          <span>{{ langService.demo(capacity().maxDailyTarget) }}</span>
         </div>
         <div class="grid grid-cols-5 gap-2 items-end h-24 pt-2">
           @for (day of capacity().dailyDistribution; track day.dayLabel) {
@@ -50,7 +51,7 @@ import { CapacityBudget } from '../../../../core/models/planner.model';
                 [class.font-bold]="day.isWarning"
                 [class.text-on-surface-variant]="!day.isWarning"
                 [style.color]="day.isWarning ? '#c2410c' : null">
-                {{ day.dayLabel }}
+                {{ langService.demo(day.dayLabel) }}
               </span>
             </div>
           }
@@ -62,7 +63,7 @@ import { CapacityBudget } from '../../../../core/models/planner.model';
         <div class="mt-3.5 p-2.5 rounded-lg bg-[#fff7ed] border border-[#ffedd5] flex items-center gap-2 text-on-surface">
           <span class="material-symbols-outlined text-[#c2410c] text-[18px]">info</span>
           <p class="text-[12px] font-body-sm text-[#9a3412] leading-tight">
-            <strong>{{ capacity().warningDay }}</strong> {{ capacity().warningMessage }}
+            <strong>{{ langService.demo(capacity().warningDay) }}</strong> {{ langService.demo(capacity().warningMessage) }}
           </p>
         </div>
       }
@@ -70,5 +71,6 @@ import { CapacityBudget } from '../../../../core/models/planner.model';
   `
 })
 export class CapacityBudgetComponent {
+  readonly langService = inject(LanguageService);
   readonly capacity = input.required<CapacityBudget>();
 }
