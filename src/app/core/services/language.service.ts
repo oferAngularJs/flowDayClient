@@ -127,6 +127,8 @@ export interface TranslationDictionary {
   signInAndConnect: string;
   continueWithGoogle: string;
   signInFailed: string;
+  signInUnauthorizedDomain: string;
+  signInNetworkError: string;
   loadingTasks: string;
   signInToStartTitle: string;
   signInToStartBody: string;
@@ -270,6 +272,8 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   signInAndConnect: 'Sign in & Connect',
   continueWithGoogle: 'Continue with Google',
   signInFailed: 'Google sign-in failed. Please try again.',
+  signInUnauthorizedDomain: 'Sign-in is not allowed from {domain}. Open the app at localhost or add the domain in Firebase.',
+  signInNetworkError: 'No connection to Google. Check your internet and try again.',
   loadingTasks: 'Loading your tasks...',
   signInToStartTitle: 'Plan your day with Flowday',
   signInToStartBody: 'Sign in with Google to save your tasks and use them on every device.',
@@ -413,6 +417,8 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   signInAndConnect: 'התחבר וחבר',
   continueWithGoogle: 'המשך עם Google',
   signInFailed: 'ההתחברות עם Google נכשלה. נסה שוב.',
+  signInUnauthorizedDomain: 'ההתחברות לא מורשית מ-{domain}. פתח את האפליקציה ב-localhost או הוסף את הדומיין ב-Firebase.',
+  signInNetworkError: 'אין חיבור ל-Google. בדוק את האינטרנט ונסה שוב.',
   loadingTasks: 'טוען את המשימות שלך...',
   signInToStartTitle: 'תכנן את היום שלך עם Flowday',
   signInToStartBody: 'התחבר עם Google כדי לשמור את המשימות שלך ולהשתמש בהן בכל מכשיר.',

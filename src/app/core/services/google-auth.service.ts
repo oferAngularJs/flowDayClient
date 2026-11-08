@@ -6,6 +6,7 @@ import {
   getRedirectResult,
   onAuthStateChanged,
   reauthenticateWithPopup,
+  reauthenticateWithRedirect,
   signInWithPopup,
   signInWithRedirect,
   signOut
@@ -53,6 +54,12 @@ function toProfile(user: User): GoogleAccountProfile {
     calendarSynced: false,
     tasksSynced: false
   };
+}
+
+/** Errors meaning "popups don't work in this browser" — retry as a same-tab redirect. */
+function shouldFallBackToRedirect(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  return code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment';
 }
 
 function readStoredToken(uid: string): StoredGoogleToken | null {
@@ -135,9 +142,8 @@ export class GoogleAuthService {
       const result = await signInWithPopup(firebaseAuth, provider);
       await this.handleSignedIn(result);
     } catch (err) {
-      const code = (err as { code?: string })?.code;
-      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
-        // Some mobile browsers block popups: continue in the same tab instead.
+      if (shouldFallBackToRedirect(err)) {
+        // Popups are blocked here (some mobile/in-app browsers): continue in the same tab instead.
         await signInWithRedirect(firebaseAuth, provider);
         return;
       }
@@ -162,12 +168,18 @@ export class GoogleAuthService {
     }
 
     this.isSigningIn.set(true);
+    const provider = this.createProvider(user.email);
     try {
-      const result = await reauthenticateWithPopup(user, this.createProvider(user.email));
+      const result = await reauthenticateWithPopup(user, provider);
       const token = GoogleAuthProvider.credentialFromResult(result)?.accessToken ?? null;
       this.zone.run(() => this.storeAccessToken(user.uid, token));
       return token;
     } catch (err) {
+      if (shouldFallBackToRedirect(err)) {
+        // Same-tab fallback; getRedirectResult() stores the new token when the app reloads.
+        await reauthenticateWithRedirect(user, provider);
+        return null;
+      }
       this.handleSignInError(err);
       return null;
     } finally {
@@ -257,6 +269,13 @@ export class GoogleAuthService {
       return; // The user closed Google's window; not an error.
     }
     console.error('Google sign-in failed', err);
-    this.zone.run(() => this.toast.show(this.lang.translations().signInFailed));
+    const message =
+      code === 'auth/unauthorized-domain'
+        ? this.lang.t('signInUnauthorizedDomain', { domain: location.hostname })
+        : code === 'auth/network-request-failed'
+          ? this.lang.translations().signInNetworkError
+          : this.lang.translations().signInFailed;
+    // Show the Firebase error code so problems can be diagnosed from a screenshot.
+    this.zone.run(() => this.toast.show(message, code ?? undefined));
   }
 }
