@@ -1,10 +1,10 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-on-surface/40 backdrop-blur-[2px] transition-opacity overflow-y-auto">
   <div class="bg-surface-container-lowest w-full max-w-sm max-h-[92dvh] flex flex-col rounded-2xl shadow-2xl border border-outline-variant/50 overflow-hidden my-auto transform transition-all duration-200">
-    <!-- Modal Header with Google Branding -->
+    <!-- Header -->
     <div class="p-4 sm:p-5 pb-3 border-b border-outline-variant/20 shrink-0">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z" fill="#4285F4"></path>
             <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" fill="#34A853"></path>
             <path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.14-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12c0 2.03.45 3.84 1.25 5.42l4.03-3.15z" fill="#FBBC05"></path>
@@ -15,6 +15,7 @@
         <button
           type="button"
           (click)="closeModal.emit()"
+          [attr.aria-label]="langService.translations().cancel"
           class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant transition-colors cursor-pointer">
           <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
@@ -25,124 +26,49 @@
       </p>
     </div>
 
-    <!-- Form & Scrollable Content -->
-    <form (ngSubmit)="submitAuth()" class="flex flex-col flex-1 overflow-hidden">
-      <div class="overflow-y-auto flex-1 overscroll-contain p-4 sm:p-5 space-y-4">
-        <!-- Error Alert if validation fails -->
-        @if (errorMessage()) {
-          <div class="p-2.5 rounded-xl bg-error/10 border border-error/30 text-error text-[12px] flex items-center gap-2">
-            <span class="material-symbols-outlined text-[16px] shrink-0">error</span>
-            <span>{{ errorMessage() }}</span>
-          </div>
+    <!-- Requested permissions -->
+    <div class="overflow-y-auto flex-1 overscroll-contain p-4 sm:p-5 space-y-2.5">
+      <p class="text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider">{{ langService.translations().requestedAccess }}</p>
+      <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
+        <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">calendar_month</span>
+        <div class="leading-tight">
+          <span class="font-medium">{{ langService.translations().googleCalendar }}</span>
+          <p class="text-[12px] text-on-surface-variant">{{ langService.translations().calendarScopeDesc }}</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
+        <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">task_alt</span>
+        <div class="leading-tight">
+          <span class="font-medium">{{ langService.translations().googleTasks }}</span>
+          <p class="text-[12px] text-on-surface-variant">{{ langService.translations().tasksScopeDesc }}</p>
+        </div>
+      </div>
+      <p class="text-[11px] text-on-surface-variant leading-snug pt-1">
+        {{ langService.translations().oauthDisclaimer }}
+      </p>
+    </div>
+
+    <!-- Actions -->
+    <div class="p-4 pt-3 bg-surface-container-low/60 border-t border-outline-variant/30 flex items-center gap-2 shrink-0">
+      <button
+        type="button"
+        (click)="closeModal.emit()"
+        class="flex-1 py-2 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface text-label-md font-medium hover:bg-surface-container transition-colors active:scale-95 cursor-pointer">
+        {{ langService.translations().cancel }}
+      </button>
+      <button
+        type="button"
+        (click)="authorize.emit()"
+        [disabled]="authService.isSigningIn()"
+        class="flex-[1.5] py-2 rounded-xl bg-primary text-on-primary text-label-md font-medium flex items-center justify-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition-all disabled:opacity-50 cursor-pointer">
+        @if (authService.isSigningIn()) {
+          <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+          <span>{{ langService.translations().signingIn }}</span>
+        } @else {
+          <span class="material-symbols-outlined text-[16px]">verified_user</span>
+          <span>{{ langService.translations().continueWithGoogle }}</span>
         }
-
-        <!-- Email Input -->
-        <div>
-          <label for="google-email" class="block text-center text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-            {{ langService.translations().emailOrPhone }} <span class="text-error font-bold">*</span>
-          </label>
-          <div class="relative flex items-center">
-            <span class="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3 pointer-events-none">mail</span>
-            <input
-              id="google-email"
-              type="email"
-              name="email"
-              [ngModel]="email()"
-              (ngModelChange)="email.set($event); errorMessage.set('')"
-              [placeholder]="langService.translations().emailPlaceholder"
-              autocomplete="email"
-              required
-              autofocus
-              class="w-full px-9 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md text-center transition"
-              [class.border-error]="errorMessage() && !isEmailValid()"
-              [class.border-outline-variant]="!errorMessage() || isEmailValid()" />
-            @if (email().length > 0) {
-              <button
-                type="button"
-                (click)="clearAccount()"
-                [attr.aria-label]="langService.translations().clearInput"
-                class="absolute right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container cursor-pointer">
-                <span class="material-symbols-outlined text-[14px]">cancel</span>
-              </button>
-            }
-          </div>
-        </div>
-
-        <!-- Password Input -->
-        <div>
-          <label for="google-password" class="block text-center text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
-            {{ langService.translations().password }} <span class="text-error font-bold">*</span>
-          </label>
-          <div class="relative flex items-center">
-            <span class="material-symbols-outlined text-[18px] text-on-surface-variant absolute left-3 pointer-events-none">lock</span>
-            <input
-              id="google-password"
-              [type]="showPassword() ? 'text' : 'password'"
-              name="password"
-              [ngModel]="password()"
-              (ngModelChange)="password.set($event); errorMessage.set('')"
-              [placeholder]="langService.translations().passwordPlaceholder"
-              autocomplete="current-password"
-              required
-              class="w-full px-9 py-2.5 rounded-xl border bg-surface-container-low text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-body-md text-center transition"
-              [class.border-error]="errorMessage() && !password().trim()"
-              [class.border-outline-variant]="!errorMessage() || !!password().trim()" />
-            <button
-              type="button"
-              (click)="toggleShowPassword()"
-              [attr.aria-label]="showPassword() ? langService.translations().hidePassword : langService.translations().showPassword"
-              class="absolute right-2.5 w-6 h-6 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">
-              <span class="material-symbols-outlined text-[18px]">
-                {{ showPassword() ? 'visibility_off' : 'visibility' }}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Permission Scopes Consent -->
-        <div class="pt-2 border-t border-outline-variant/20 space-y-2.5">
-          <p class="text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider">{{ langService.translations().requestedAccess }}</p>
-          <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
-            <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">calendar_month</span>
-            <div class="leading-tight">
-              <span class="font-medium">{{ langService.translations().googleCalendar }}</span>
-              <p class="text-[12px] text-on-surface-variant">{{ langService.translations().calendarScopeDesc }}</p>
-            </div>
-          </div>
-          <div class="flex items-start gap-2.5 text-body-sm text-on-surface">
-            <span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">task_alt</span>
-            <div class="leading-tight">
-              <span class="font-medium">{{ langService.translations().googleTasks }}</span>
-              <p class="text-[12px] text-on-surface-variant">{{ langService.translations().tasksScopeDesc }}</p>
-            </div>
-          </div>
-          <p class="text-[11px] text-on-surface-variant leading-snug pt-1">
-            {{ langService.translations().oauthDisclaimer }}
-          </p>
-        </div>
-      </div>
-
-      <!-- Modal Footer Actions -->
-      <div class="p-4 pt-3 bg-surface-container-low/60 border-t border-outline-variant/30 flex items-center gap-2 shrink-0">
-        <button
-          type="button"
-          (click)="closeModal.emit()"
-          class="flex-1 py-2 rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface text-label-md font-medium hover:bg-surface-container transition-colors active:scale-95 cursor-pointer">
-          {{ langService.translations().cancel }}
-        </button>
-        <button
-          type="submit"
-          [disabled]="isSubmitting()"
-          class="flex-[1.5] py-2 rounded-xl bg-primary text-on-primary text-label-md font-medium flex items-center justify-center gap-1.5 shadow-sm hover:opacity-95 active:scale-95 transition-all disabled:opacity-50 cursor-pointer">
-          @if (isSubmitting()) {
-            <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-            <span>{{ langService.translations().signingIn }}</span>
-          } @else {
-            <span class="material-symbols-outlined text-[16px]">verified_user</span>
-            <span>{{ langService.translations().signInAndConnect }}</span>
-          }
-        </button>
-      </div>
-    </form>
+      </button>
+    </div>
   </div>
 </div>

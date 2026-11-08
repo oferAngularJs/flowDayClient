@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { TopBarComponent } from './shared/components/top-bar/top-bar.component';
 import { BottomNavComponent, NavTab } from './shared/components/bottom-nav/bottom-nav.component';
-import { GoogleOauthModalComponent, GoogleAuthCredentials } from './shared/components/google-oauth-modal/google-oauth-modal.component';
+import { GoogleOauthModalComponent } from './shared/components/google-oauth-modal/google-oauth-modal.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { PlannerComponent } from './features/planner/planner.component';
@@ -65,12 +65,8 @@ export class AppComponent implements OnInit {
     }
   }
 
-  onAuthorizeGoogle(credentials?: GoogleAuthCredentials): void {
+  async onAuthorizeGoogle(): Promise<void> {
+    await this.authService.signInWithGoogle();
     this.isGoogleModalOpen.set(false);
-    if (credentials?.email) {
-      this.authService.authorizeWithCredentials(credentials.email, credentials.password);
-    } else {
-      this.authService.authorizeGoogleAccount();
-    }
   }
 }

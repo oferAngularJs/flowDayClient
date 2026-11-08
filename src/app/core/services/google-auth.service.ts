@@ -1,142 +1,169 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { ApiService } from './api.service';
+import { Injectable, NgZone, inject, signal } from '@angular/core';
+import {
+  GoogleAuthProvider,
+  User,
+  UserCredential,
+  getRedirectResult,
+  onAuthStateChanged,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut
+} from 'firebase/auth';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { firebaseAuth, firestore } from '../firebase/firebase';
 import { ToastService } from './toast.service';
 import { LanguageService } from './language.service';
-import { GoogleAccountProfile, GoogleAuthResponse } from '../models/auth.model';
+import { GoogleAccountProfile } from '../models/auth.model';
 
-const STORAGE_KEY_GOOGLE_USER = 'flowday_google_user';
-const STORAGE_KEY_GOOGLE_TOKEN = 'flowday_google_token';
+/** Google API permissions Flowday asks for (must match the OAuth consent screen). */
+export const GOOGLE_SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/tasks'
+];
 
-function getStoredGoogleUser(): GoogleAccountProfile | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_GOOGLE_USER);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch {}
-  return null;
-}
+/** Keys written by the old fake sign-in; removed so no stale "user" lingers. */
+const LEGACY_STORAGE_KEYS = ['flowday_google_user', 'flowday_google_token'];
 
-function saveStoredGoogleUser(user: GoogleAccountProfile | null): void {
-  try {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY_GOOGLE_USER, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY_GOOGLE_USER);
-    }
-  } catch {}
+function toProfile(user: User): GoogleAccountProfile {
+  const name = user.displayName?.trim() || user.email?.split('@')[0] || 'User';
+  const firstName = name.split(' ')[0] || name;
+  return {
+    id: user.uid,
+    name,
+    firstName,
+    email: user.email ?? '',
+    avatarInitial: firstName.charAt(0).toUpperCase() || 'U',
+    photoURL: user.photoURL,
+    calendarSynced: false,
+    tasksSynced: false
+  };
 }
 
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
-  private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
   private readonly lang = inject(LanguageService);
+  private readonly zone = inject(NgZone);
 
-  private readonly initialUser = getStoredGoogleUser();
-  readonly isConnected = signal<boolean>(!!this.initialUser);
-  readonly currentUser = signal<GoogleAccountProfile | null>(this.initialUser);
+  readonly isConnected = signal<boolean>(false);
+  readonly currentUser = signal<GoogleAccountProfile | null>(null);
+  /** True until Firebase has restored (or ruled out) a signed-in session. */
+  readonly isAuthLoading = signal<boolean>(true);
+  readonly isSigningIn = signal<boolean>(false);
+
+  /**
+   * Short-lived (~1h) Google API access token from the last interactive sign-in.
+   * Kept in memory only. Background sync will use server-side refresh tokens (roadmap step 2).
+   */
+  readonly googleAccessToken = signal<string | null>(null);
+
+  private initialized = false;
 
   checkAuthStatus(): void {
-    const stored = getStoredGoogleUser();
-    if (stored) {
-      this.isConnected.set(true);
-      this.currentUser.set(stored);
-    }
-    this.api
-      .get<GoogleAuthResponse>('/auth/google/status', {
-        connected: this.isConnected(),
-        profile: this.currentUser(),
-        syncedAt: new Date().toISOString()
-      })
-      .subscribe((res) => {
-        // Only update if server returned valid profile or keep current stored
-        if (res.connected && res.profile) {
-          this.isConnected.set(true);
-          this.currentUser.set(res.profile);
-          saveStoredGoogleUser(res.profile);
-        }
-      });
-  }
+    if (this.initialized) return;
+    this.initialized = true;
 
-  authorizeWithCredentials(email: string, _password?: string): void {
-    const trimmedEmail = email.trim();
-    const emailPrefix = trimmedEmail.split('@')[0] || 'User';
-    // Format a friendly display name and first name from email prefix: e.g. ofer.k -> Ofer
-    const cleanPrefix = emailPrefix.replace(/[._\-+0-9]+/g, ' ').trim() || emailPrefix;
-    const parts = cleanPrefix.split(' ').filter(Boolean);
-    const capitalizedParts = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1));
-    const fullName = capitalizedParts.join(' ') || emailPrefix;
-    const firstName = capitalizedParts[0] || emailPrefix;
-    const initial = firstName.charAt(0).toUpperCase() || 'U';
-
-    const profile: GoogleAccountProfile = {
-      id: `google-usr-${Date.now()}`,
-      name: fullName,
-      firstName,
-      email: trimmedEmail,
-      avatarInitial: initial,
-      calendarSynced: true,
-      tasksSynced: true,
-      accessToken: `ya29.flowday-${Date.now()}`
-    };
-
-    const fallbackResponse: GoogleAuthResponse = {
-      connected: true,
-      profile,
-      syncedAt: new Date().toISOString()
-    };
-
-    // Synchronously update state immediately so the greeting updates right away
-    this.isConnected.set(true);
-    this.currentUser.set(profile);
-    saveStoredGoogleUser(profile);
     try {
-      localStorage.setItem(STORAGE_KEY_GOOGLE_TOKEN, profile.accessToken || '');
-    } catch {}
+      LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // Storage may be unavailable (private mode); nothing to clean up then.
+    }
 
-    this.api
-      .post<GoogleAuthResponse, { email: string; scopes: string[] }>(
-        '/auth/google/connect',
-        { email: trimmedEmail, scopes: ['calendar.events', 'tasks'] },
-        fallbackResponse
-      )
-      .subscribe((res) => {
-        if (res.profile) {
-          this.currentUser.set(res.profile);
-          saveStoredGoogleUser(res.profile);
-        }
-        this.toast.show(
-          this.lang.t('toastConnectedAs', { email: trimmedEmail }),
-          'POST /api/v1/auth/google/connect'
-        );
+    onAuthStateChanged(firebaseAuth, (user) => {
+      this.zone.run(() => {
+        this.currentUser.set(user ? toProfile(user) : null);
+        this.isConnected.set(!!user);
+        this.isAuthLoading.set(false);
       });
+    });
+
+    // Completes a sign-in that fell back to a full-page redirect (popup blocked).
+    getRedirectResult(firebaseAuth)
+      .then((result) => result && this.handleSignedIn(result))
+      .catch((err) => this.handleSignInError(err));
   }
 
-  authorizeGoogleAccount(): void {
-    const current = this.currentUser();
-    if (current?.email) {
-      this.authorizeWithCredentials(current.email);
-    } else {
-      this.authorizeWithCredentials('alex.developer@gmail.com');
+  async signInWithGoogle(): Promise<void> {
+    if (this.isSigningIn()) return;
+    this.isSigningIn.set(true);
+    const provider = this.createProvider();
+
+    try {
+      const result = await signInWithPopup(firebaseAuth, provider);
+      await this.handleSignedIn(result);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+        // Some mobile browsers block popups: continue in the same tab instead.
+        await signInWithRedirect(firebaseAuth, provider);
+        return;
+      }
+      this.handleSignInError(err);
+    } finally {
+      this.zone.run(() => this.isSigningIn.set(false));
     }
   }
 
-  disconnectGoogleAccount(): void {
-    this.api
-      .post<{ disconnected: boolean }, Record<string, never>>(
-        '/auth/google/disconnect',
-        {},
-        { disconnected: true }
-      )
-      .subscribe(() => {
-        this.isConnected.set(false);
-        this.currentUser.set(null);
-        saveStoredGoogleUser(null);
-        try {
-          localStorage.removeItem(STORAGE_KEY_GOOGLE_TOKEN);
-        } catch {}
-        this.toast.show(this.lang.translations().toastDisconnected, 'POST /api/v1/auth/google/disconnect');
-      });
+  async disconnectGoogleAccount(): Promise<void> {
+    await signOut(firebaseAuth);
+    this.zone.run(() => {
+      this.googleAccessToken.set(null);
+      this.toast.show(this.lang.translations().toastDisconnected);
+    });
+  }
+
+  private createProvider(): GoogleAuthProvider {
+    const provider = new GoogleAuthProvider();
+    GOOGLE_SCOPES.forEach((scope) => provider.addScope(scope));
+    // Always show the account chooser so "Switch account" works.
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return provider;
+  }
+
+  private async handleSignedIn(result: UserCredential): Promise<void> {
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const profile = toProfile(result.user);
+
+    this.zone.run(() => {
+      this.googleAccessToken.set(credential?.accessToken ?? null);
+      this.currentUser.set(profile);
+      this.isConnected.set(true);
+      this.toast.show(this.lang.t('toastConnectedAs', { email: profile.email }));
+    });
+
+    try {
+      await this.saveUserProfile(result.user);
+    } catch (err) {
+      // Sign-in still succeeded; the profile will be saved on the next login.
+      console.error('Saving user profile to Firestore failed', err);
+    }
+  }
+
+  /** Creates or updates users/{uid}. createdAt is only written the first time. */
+  private async saveUserProfile(user: User): Promise<void> {
+    const ref = doc(firestore, 'users', user.uid);
+    const existing = await getDoc(ref);
+    await setDoc(
+      ref,
+      {
+        uid: user.uid,
+        name: user.displayName ?? '',
+        email: user.email ?? '',
+        photoURL: user.photoURL ?? null,
+        language: this.lang.currentLanguage(),
+        lastLoginAt: serverTimestamp(),
+        ...(existing.exists() ? {} : { createdAt: serverTimestamp() })
+      },
+      { merge: true }
+    );
+  }
+
+  private handleSignInError(err: unknown): void {
+    const code = (err as { code?: string })?.code;
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return; // The user closed Google's window; not an error.
+    }
+    console.error('Google sign-in failed', err);
+    this.zone.run(() => this.toast.show(this.lang.translations().signInFailed));
   }
 }

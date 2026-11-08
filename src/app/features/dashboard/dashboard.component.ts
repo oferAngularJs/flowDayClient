@@ -65,15 +65,10 @@ export class DashboardComponent {
     }
   }
 
-  // Dynamic user display name: if connected with Google, shows the exact Google user name / Gmail prefix; otherwise defaults to 'Alex'
+  // Signed-in user's first name from their Google account; empty when signed out
   readonly userName = computed(() => {
     const user = this.authService.currentUser();
-    if (user?.name) return user.name;
-    if (user?.firstName) return user.firstName;
-    if (user?.email) {
-      return user.email.split('@')[0];
-    }
-    return 'Alex';
+    return user?.firstName ?? '';
   });
 
   // Dynamic time-based greeting (morning, afternoon, evening, night)

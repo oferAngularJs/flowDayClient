@@ -24,7 +24,7 @@
           </div>
         </div>
         <h1 class="text-headline-lg-mobile font-headline-lg-mobile tracking-tight text-on-surface mt-1.5">
-          {{ greeting() }}, {{ userName() }}. {{ langService.translations().makeTodayCount }}
+          {{ greeting() }}{{ userName() ? ', ' + userName() : '' }}. {{ langService.translations().makeTodayCount }}
         </h1>
       </div>
     </div>

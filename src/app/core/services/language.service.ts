@@ -119,21 +119,14 @@ export interface TranslationDictionary {
   signInWithGoogle: string;
   authorizeFlowday: string;
   oauthDescription: string;
-  emailOrPhone: string;
-  emailPlaceholder: string;
-  password: string;
-  passwordPlaceholder: string;
-  clearInput: string;
-  showPassword: string;
-  hidePassword: string;
   requestedAccess: string;
   calendarScopeDesc: string;
   tasksScopeDesc: string;
   oauthDisclaimer: string;
   signingIn: string;
   signInAndConnect: string;
-  invalidEmailError: string;
-  passwordRequiredError: string;
+  continueWithGoogle: string;
+  signInFailed: string;
   toastConnectedAs: string;
   toastDisconnected: string;
   toastReanalyzed: string;
@@ -147,7 +140,6 @@ export interface TranslationDictionary {
   toastSmartReschedule: string;
   toastSortedEarliest: string;
   toastSortedLatest: string;
-  toastAnotherAccount: string;
   toastTasksView: string;
   toastAnalyticsView: string;
 }
@@ -256,21 +248,14 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   signInWithGoogle: 'Sign in with Google',
   authorizeFlowday: 'Authorize Flowday AI',
   oauthDescription: 'Flowday wants access to your Google Account to synchronize schedules and task lists.',
-  emailOrPhone: 'Email or Phone',
-  emailPlaceholder: 'Enter your Gmail',
-  password: 'Password',
-  passwordPlaceholder: 'Enter password',
-  clearInput: 'Clear input',
-  showPassword: 'Show password',
-  hidePassword: 'Hide password',
   requestedAccess: 'Requested Access',
   calendarScopeDesc: 'View and edit calendar events to schedule optimal focus blocks.',
   tasksScopeDesc: 'Sync tasks and deadlines with Google Tasks for bidirectional updates.',
-  oauthDisclaimer: 'By signing in, Google will share your name, email address, language preference, and profile with Flowday.',
+  oauthDisclaimer: 'Google will share your name, email address and profile picture with Flowday. Flowday never sees your password.',
   signingIn: 'Signing in...',
   signInAndConnect: 'Sign in & Connect',
-  invalidEmailError: 'Please enter a valid email address (e.g. name@gmail.com)',
-  passwordRequiredError: 'Please enter your password to authenticate',
+  continueWithGoogle: 'Continue with Google',
+  signInFailed: 'Google sign-in failed. Please try again.',
   toastConnectedAs: 'Connected as {email}',
   toastDisconnected: 'Google Account disconnected',
   toastReanalyzed: 'AI re-analyzed workload & balanced Thursday capacity',
@@ -284,7 +269,6 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   toastSmartReschedule: 'Smart Reschedule: "Review Q4 design spec" shifted to Friday morning',
   toastSortedEarliest: 'Sorted tasks by earliest time',
   toastSortedLatest: 'Sorted tasks by latest time',
-  toastAnotherAccount: 'Add another account selected',
   toastTasksView: 'Tasks view opened',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
@@ -393,21 +377,14 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   signInWithGoogle: 'התחברות עם Google',
   authorizeFlowday: 'אישור גישה ל-Flowday AI',
   oauthDescription: 'Flowday מבקש גישה לחשבון Google שלך כדי לסנכרן לוחות זמנים ורשימות משימות.',
-  emailOrPhone: 'אימייל או טלפון',
-  emailPlaceholder: 'הזן את כתובת ה-Gmail שלך',
-  password: 'סיסמה',
-  passwordPlaceholder: 'הזן סיסמה',
-  clearInput: 'נקה שדה',
-  showPassword: 'הצג סיסמה',
-  hidePassword: 'הסתר סיסמה',
   requestedAccess: 'הרשאות מבוקשות',
   calendarScopeDesc: 'צפייה ועריכה של אירועי יומן לתזמון בלוקי ריכוז אופטימליים.',
   tasksScopeDesc: 'סנכרון משימות ומועדים עם Google Tasks לעדכונים דו-כיווניים.',
-  oauthDisclaimer: 'בהתחברות, Google ישתף עם Flowday את שמך, כתובת האימייל, העדפת השפה והפרופיל שלך.',
+  oauthDisclaimer: 'Google ישתף עם Flowday את שמך, כתובת האימייל ותמונת הפרופיל. Flowday לעולם לא רואה את הסיסמה שלך.',
   signingIn: 'מתחבר...',
   signInAndConnect: 'התחבר וחבר',
-  invalidEmailError: 'נא להזין כתובת אימייל תקינה (לדוגמה name@gmail.com)',
-  passwordRequiredError: 'נא להזין סיסמה כדי להתחבר',
+  continueWithGoogle: 'המשך עם Google',
+  signInFailed: 'ההתחברות עם Google נכשלה. נסה שוב.',
   toastConnectedAs: 'מחובר כ-{email}',
   toastDisconnected: 'חשבון Google נותק',
   toastReanalyzed: 'הבינה המלאכותית ניתחה מחדש את העומס ואיזנה את יום חמישי',
@@ -421,7 +398,6 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   toastSmartReschedule: 'תזמון חכם: "Review Q4 design spec" הועברה ליום שישי בבוקר',
   toastSortedEarliest: 'המשימות מוינו מהמוקדמת למאוחרת',
   toastSortedLatest: 'המשימות מוינו מהמאוחרת למוקדמת',
-  toastAnotherAccount: 'נבחרה הוספת חשבון נוסף',
   toastTasksView: 'תצוגת המשימות נפתחה',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };

@@ -28,7 +28,6 @@
   @if (isGoogleModalOpen()) {
     <app-google-oauth-modal
       (closeModal)="isGoogleModalOpen.set(false)"
-      (authorize)="onAuthorizeGoogle($event)"
-      (useAnotherAccount)="toastService.show(langService.translations().toastAnotherAccount)" />
+      (authorize)="onAuthorizeGoogle()" />
   }
 </div>
