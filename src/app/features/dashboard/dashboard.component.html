@@ -52,6 +52,35 @@
       </button>
     </div>
     } @else {
+    <!-- Google Calendar / Tasks sync status -->
+    <div class="flex items-center justify-center">
+      @if (!syncService.hasAccess()) {
+        <button
+          type="button"
+          (click)="syncService.connect()"
+          [disabled]="authService.isSigningIn()"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/40 bg-surface-container-lowest text-primary text-label-sm font-label-sm shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50">
+          <span class="material-symbols-outlined text-[16px]">sync</span>
+          <span>{{ langService.translations().connectGoogleCalendar }}</span>
+          @if (syncService.pendingCount() > 0) {
+            <span class="px-1.5 rounded-full bg-primary text-on-primary text-[10px]">
+              {{ langService.t('googleChangesWaiting', { count: syncService.pendingCount() }) }}
+            </span>
+          }
+        </button>
+      } @else if (syncService.isSyncing()) {
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant text-label-sm font-label-sm">
+          <span class="material-symbols-outlined text-[15px] animate-spin">sync</span>
+          {{ langService.translations().googleSyncing }}
+        </span>
+      } @else {
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-primary text-label-sm font-label-sm">
+          <span class="material-symbols-outlined text-[15px]">cloud_done</span>
+          {{ langService.translations().googleSynced }}
+        </span>
+      }
+    </div>
+
     <!-- Quick Action: New Task Strip -->
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
@@ -85,6 +114,30 @@
       (toggleTask)="taskService.toggleTaskStatus($event)"
       (sortByTime)="taskService.toggleSortOrder()"
       (editTask)="openEditTask($event)" />
+
+    <!-- Read-only events from the user's Google Calendar for the selected day -->
+    @if (syncService.dayEvents().length > 0) {
+      <div class="space-y-2">
+        <h2 class="text-headline-sm font-headline-sm text-on-surface flex items-center gap-1.5 px-0.5">
+          <span class="material-symbols-outlined text-[18px] text-primary">calendar_month</span>
+          <span>{{ langService.translations().fromGoogleCalendar }}</span>
+        </h2>
+        @for (event of syncService.dayEvents(); track event.id) {
+          <a
+            [href]="event.link"
+            target="_blank"
+            rel="noopener"
+            class="flex items-center gap-3 bg-surface-container-low/60 p-2.5 rounded-xl border border-outline-variant/30 hover:bg-surface-container-low transition-colors">
+            <span class="w-1 self-stretch rounded-full bg-primary/60"></span>
+            <div class="flex-1 min-w-0">
+              <p class="text-body-sm font-medium text-on-surface truncate">{{ event.title }}</p>
+              <p class="text-label-sm text-on-surface-variant">{{ event.timeLabel }}</p>
+            </div>
+            <span class="material-symbols-outlined text-[16px] text-on-surface-variant">open_in_new</span>
+          </a>
+        }
+      </div>
+    }
 
     @if (data.tasks.length === 0) {
       <div class="rounded-xl border border-dashed border-outline-variant/60 p-5 text-center space-y-2">

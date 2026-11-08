@@ -133,6 +133,14 @@ export interface TranslationDictionary {
   noTasksForDay: string;
   tasksLoadError: string;
   tasksSaveError: string;
+  connectGoogleCalendar: string;
+  googleSynced: string;
+  googleSyncing: string;
+  googleChangesWaiting: string;
+  fromGoogleCalendar: string;
+  allDay: string;
+  googleSyncError: string;
+  googleEventsLoadError: string;
   toastConnectedAs: string;
   toastDisconnected: string;
   toastReanalyzed: string;
@@ -268,6 +276,14 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   noTasksForDay: 'No tasks for this day yet.',
   tasksLoadError: 'Could not load your tasks. Check your connection.',
   tasksSaveError: 'Could not save the change. Please try again.',
+  connectGoogleCalendar: 'Connect Google Calendar',
+  googleSynced: 'Synced with Google',
+  googleSyncing: 'Syncing with Google...',
+  googleChangesWaiting: '{count} waiting',
+  fromGoogleCalendar: 'From Google Calendar',
+  allDay: 'All day',
+  googleSyncError: 'Some tasks could not be synced to Google. Will retry.',
+  googleEventsLoadError: 'Could not load your Google Calendar events.',
   toastConnectedAs: 'Connected as {email}',
   toastDisconnected: 'Google Account disconnected',
   toastReanalyzed: 'AI re-analyzed workload & balanced Thursday capacity',
@@ -403,6 +419,14 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   noTasksForDay: 'אין עדיין משימות ליום הזה.',
   tasksLoadError: 'לא ניתן לטעון את המשימות. בדוק את החיבור.',
   tasksSaveError: 'לא ניתן לשמור את השינוי. נסה שוב.',
+  connectGoogleCalendar: 'חבר את יומן Google',
+  googleSynced: 'מסונכרן עם Google',
+  googleSyncing: 'מסנכרן עם Google...',
+  googleChangesWaiting: '{count} ממתינים',
+  fromGoogleCalendar: 'מיומן Google',
+  allDay: 'כל היום',
+  googleSyncError: 'חלק מהמשימות לא סונכרנו ל-Google. ננסה שוב.',
+  googleEventsLoadError: 'לא ניתן לטעון את אירועי יומן Google.',
   toastConnectedAs: 'מחובר כ-{email}',
   toastDisconnected: 'חשבון Google נותק',
   toastReanalyzed: 'הבינה המלאכותית ניתחה מחדש את העומס ואיזנה את יום חמישי',

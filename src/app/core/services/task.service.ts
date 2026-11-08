@@ -6,6 +6,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  increment,
   onSnapshot,
   serverTimestamp,
   setDoc,
@@ -66,7 +67,11 @@ function fromSnapshot(snap: QueryDocumentSnapshot<DocumentData>, today: string):
     completedSubtasks: data.completedSubtasks ?? 0,
     totalSubtasks: data.totalSubtasks ?? 0,
     dueDate: data.dueDate ?? today,
-    isOverdue: data.status !== 'DONE' && !!data.dueDate && data.dueDate < today
+    isOverdue: data.status !== 'DONE' && !!data.dueDate && data.dueDate < today,
+    revision: data.revision ?? 0,
+    googleSyncedRevision: data.googleSyncedRevision ?? 0,
+    googleEventId: data.googleEventId,
+    googleTaskId: data.googleTaskId
   };
 }
 
@@ -224,7 +229,7 @@ export class TaskService {
 
     const newStatus = target.status === 'DONE' ? 'PENDING' : 'DONE';
     // Firestore applies the change to the local cache immediately, so the UI updates instantly.
-    updateDoc(doc(col, taskId), { status: newStatus, updatedAt: serverTimestamp() }).catch((e) =>
+    updateDoc(doc(col, taskId), { status: newStatus, revision: increment(1), updatedAt: serverTimestamp() }).catch((e) =>
       this.reportSaveError(e)
     );
     this.toast.show(
@@ -257,6 +262,8 @@ export class TaskService {
 
     setDoc(ref, {
       ...pickStored(task),
+      revision: 1,
+      googleSyncedRevision: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     }).catch((e) => this.reportSaveError(e));
@@ -269,7 +276,7 @@ export class TaskService {
     const target = this.allTasks().find((t) => t.id === taskId);
     if (!col || !target) return;
 
-    updateDoc(doc(col, taskId), { ...pickStored(changes), updatedAt: serverTimestamp() }).catch((e) =>
+    updateDoc(doc(col, taskId), { ...pickStored(changes), revision: increment(1), updatedAt: serverTimestamp() }).catch((e) =>
       this.reportSaveError(e)
     );
     this.toast.show(this.lang.t('toastTaskUpdated', { title: changes.title ?? target.title }));
@@ -279,6 +286,23 @@ export class TaskService {
     const col = this.tasksCollection();
     if (!col) return;
     deleteDoc(doc(col, taskId)).catch((e) => this.reportSaveError(e));
+  }
+
+  /**
+   * Records that `revision` of a task was pushed to Google, plus the Google ids it got.
+   * Doesn't bump `revision`, so it never triggers another sync by itself.
+   */
+  recordGoogleSync(
+    taskId: string,
+    revision: number,
+    ids: { googleEventId?: string | null; googleTaskId?: string | null }
+  ): Promise<void> {
+    const col = this.tasksCollection();
+    if (!col) return Promise.resolve();
+    const update: { [field: string]: number | string | null } = { googleSyncedRevision: revision };
+    if (ids.googleEventId !== undefined) update['googleEventId'] = ids.googleEventId;
+    if (ids.googleTaskId !== undefined) update['googleTaskId'] = ids.googleTaskId;
+    return updateDoc(doc(col, taskId), update);
   }
 
   /** Demo action from the AI insight card (no real rescheduling yet). */
@@ -295,6 +319,8 @@ export class TaskService {
     for (const task of newTasks) {
       batch.set(doc(col), {
         ...pickStored(task),
+        revision: 1,
+        googleSyncedRevision: 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });

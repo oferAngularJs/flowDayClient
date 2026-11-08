@@ -1,10 +1,11 @@
-import { Injectable, NgZone, inject, signal } from '@angular/core';
+import { Injectable, NgZone, computed, inject, signal } from '@angular/core';
 import {
   GoogleAuthProvider,
   User,
   UserCredential,
   getRedirectResult,
   onAuthStateChanged,
+  reauthenticateWithPopup,
   signInWithPopup,
   signInWithRedirect,
   signOut
@@ -24,6 +25,21 @@ export const GOOGLE_SCOPES = [
 /** Keys written by the old fake sign-in; removed so no stale "user" lingers. */
 const LEGACY_STORAGE_KEYS = ['flowday_google_user', 'flowday_google_token'];
 
+/**
+ * Google API access token cache. sessionStorage is cleared when the tab/app is closed,
+ * and Google tokens expire after ~1h anyway. Background sync (roadmap step 2b) will use
+ * server-side refresh tokens instead.
+ */
+const TOKEN_STORAGE_KEY = 'flowday_google_api_token';
+/** Google access tokens last 60 minutes; refresh a bit early. */
+const TOKEN_LIFETIME_MS = 55 * 60 * 1000;
+
+interface StoredGoogleToken {
+  uid: string;
+  token: string;
+  expiresAt: number;
+}
+
 function toProfile(user: User): GoogleAccountProfile {
   const name = user.displayName?.trim() || user.email?.split('@')[0] || 'User';
   const firstName = name.split(' ')[0] || name;
@@ -39,6 +55,31 @@ function toProfile(user: User): GoogleAccountProfile {
   };
 }
 
+function readStoredToken(uid: string): StoredGoogleToken | null {
+  try {
+    const raw = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as StoredGoogleToken) : null;
+    if (parsed && parsed.uid === uid && parsed.expiresAt > Date.now()) {
+      return parsed;
+    }
+  } catch {
+    // Unavailable or corrupt storage: treat as no token.
+  }
+  return null;
+}
+
+function writeStoredToken(value: StoredGoogleToken | null): void {
+  try {
+    if (value) {
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(value));
+    } else {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Storage unavailable; the token just won't survive a reload.
+  }
+}
+
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthService {
   private readonly toast = inject(ToastService);
@@ -51,13 +92,14 @@ export class GoogleAuthService {
   readonly isAuthLoading = signal<boolean>(true);
   readonly isSigningIn = signal<boolean>(false);
 
-  /**
-   * Short-lived (~1h) Google API access token from the last interactive sign-in.
-   * Kept in memory only. Background sync will use server-side refresh tokens (roadmap step 2).
-   */
-  readonly googleAccessToken = signal<string | null>(null);
+  /** Short-lived Google API access token (Calendar + Tasks), or null when expired/missing. */
+  private readonly googleToken = signal<StoredGoogleToken | null>(null);
+  readonly googleAccessToken = computed(() => this.googleToken()?.token ?? null);
+  /** Whether Google Calendar/Tasks can be called right now. */
+  readonly hasGoogleAccess = computed(() => !!this.googleToken());
 
   private initialized = false;
+  private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   checkAuthStatus(): void {
     if (this.initialized) return;
@@ -74,6 +116,7 @@ export class GoogleAuthService {
         this.currentUser.set(user ? toProfile(user) : null);
         this.isConnected.set(!!user);
         this.isAuthLoading.set(false);
+        this.setGoogleToken(user ? readStoredToken(user.uid) : null);
       });
     });
 
@@ -104,20 +147,70 @@ export class GoogleAuthService {
     }
   }
 
-  async disconnectGoogleAccount(): Promise<void> {
-    await signOut(firebaseAuth);
-    this.zone.run(() => {
-      this.googleAccessToken.set(null);
-      this.toast.show(this.lang.translations().toastDisconnected);
-    });
+  /**
+   * Returns a valid Google API token. When none is available and `interactive` is true,
+   * asks Google again (same account) — this must be called from a user tap so the popup isn't blocked.
+   */
+  async ensureGoogleAccess(interactive: boolean): Promise<string | null> {
+    const current = this.googleToken();
+    if (current && current.expiresAt > Date.now()) {
+      return current.token;
+    }
+    const user = firebaseAuth.currentUser;
+    if (!interactive || !user || this.isSigningIn()) {
+      return null;
+    }
+
+    this.isSigningIn.set(true);
+    try {
+      const result = await reauthenticateWithPopup(user, this.createProvider(user.email));
+      const token = GoogleAuthProvider.credentialFromResult(result)?.accessToken ?? null;
+      this.zone.run(() => this.storeAccessToken(user.uid, token));
+      return token;
+    } catch (err) {
+      this.handleSignInError(err);
+      return null;
+    } finally {
+      this.zone.run(() => this.isSigningIn.set(false));
+    }
   }
 
-  private createProvider(): GoogleAuthProvider {
+  /** Called when Google rejects the token (401), so the UI offers to reconnect. */
+  invalidateGoogleAccess(): void {
+    this.setGoogleToken(null);
+  }
+
+  async disconnectGoogleAccount(): Promise<void> {
+    this.setGoogleToken(null);
+    await signOut(firebaseAuth);
+    this.zone.run(() => this.toast.show(this.lang.translations().toastDisconnected));
+  }
+
+  private createProvider(loginHint?: string | null): GoogleAuthProvider {
     const provider = new GoogleAuthProvider();
     GOOGLE_SCOPES.forEach((scope) => provider.addScope(scope));
-    // Always show the account chooser so "Switch account" works.
-    provider.setCustomParameters({ prompt: 'select_account' });
+    // Reconnecting goes straight to the signed-in account; a fresh sign-in shows the chooser.
+    provider.setCustomParameters(loginHint ? { login_hint: loginHint } : { prompt: 'select_account' });
     return provider;
+  }
+
+  private storeAccessToken(uid: string, token: string | null): void {
+    this.setGoogleToken(token ? { uid, token, expiresAt: Date.now() + TOKEN_LIFETIME_MS } : null);
+  }
+
+  private setGoogleToken(value: StoredGoogleToken | null): void {
+    writeStoredToken(value);
+    this.googleToken.set(value);
+
+    if (this.expiryTimer) clearTimeout(this.expiryTimer);
+    this.expiryTimer = null;
+    if (value) {
+      // Flip the UI to "reconnect" as soon as the token runs out.
+      this.expiryTimer = setTimeout(
+        () => this.zone.run(() => this.googleToken.set(null)),
+        Math.max(0, value.expiresAt - Date.now())
+      );
+    }
   }
 
   private async handleSignedIn(result: UserCredential): Promise<void> {
@@ -125,7 +218,7 @@ export class GoogleAuthService {
     const profile = toProfile(result.user);
 
     this.zone.run(() => {
-      this.googleAccessToken.set(credential?.accessToken ?? null);
+      this.storeAccessToken(result.user.uid, credential?.accessToken ?? null);
       this.currentUser.set(profile);
       this.isConnected.set(true);
       this.toast.show(this.lang.t('toastConnectedAs', { email: profile.email }));

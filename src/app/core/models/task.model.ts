@@ -15,6 +15,14 @@ export interface TaskItem {
   totalSubtasks?: number;
   dueDate: string;
   isOverdue?: boolean;
+  /** Incremented on every user edit; compared with googleSyncedRevision to know what still needs syncing. */
+  revision?: number;
+  /** The revision last pushed to Google (Calendar event or Google Task). */
+  googleSyncedRevision?: number;
+  /** Google Calendar event id, for tasks with a start/end time. */
+  googleEventId?: string;
+  /** Google Tasks id (in the "Flowday" list), for tasks without a time. */
+  googleTaskId?: string;
 }
 
 export interface DashboardStats {

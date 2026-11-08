@@ -11,6 +11,7 @@ import { GoogleAuthService } from './core/services/google-auth.service';
 import { ToastService } from './core/services/toast.service';
 import { ApiService } from './core/services/api.service';
 import { LanguageService } from './core/services/language.service';
+import { GoogleSyncService } from './core/services/google-sync.service';
 
 @Component({
   selector: 'app-root',
@@ -33,6 +34,8 @@ export class AppComponent implements OnInit {
   readonly toastService = inject(ToastService);
   readonly apiService = inject(ApiService);
   readonly langService = inject(LanguageService);
+  // Created at startup so Google sync runs on every screen, not only the dashboard.
+  private readonly googleSync = inject(GoogleSyncService);
 
   readonly currentView = signal<'dashboard' | 'planner'>('dashboard');
   readonly isGoogleModalOpen = signal<boolean>(false);

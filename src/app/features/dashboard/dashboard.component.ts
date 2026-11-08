@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, output, signal } 
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { GoogleAuthService } from '../../core/services/google-auth.service';
+import { GoogleSyncService } from '../../core/services/google-sync.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BentoStatsComponent } from './components/bento-stats/bento-stats.component';
 import { FocusTaskListComponent } from './components/focus-task-list/focus-task-list.component';
@@ -35,6 +36,7 @@ export const TASK_CATEGORIES: TaskCategoryOption[] = [
 export class DashboardComponent {
   readonly taskService = inject(TaskService);
   readonly authService = inject(GoogleAuthService);
+  readonly syncService = inject(GoogleSyncService);
   readonly langService = inject(LanguageService);
   readonly navigateToPlanner = output<void>();
   readonly requestSignIn = output<void>();
