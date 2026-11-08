@@ -4,9 +4,9 @@ import { TaskService } from '../../core/services/task.service';
 import { GoogleAuthService } from '../../core/services/google-auth.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BentoStatsComponent } from './components/bento-stats/bento-stats.component';
-import { AiInsightCardComponent } from './components/ai-insight-card/ai-insight-card.component';
 import { FocusTaskListComponent } from './components/focus-task-list/focus-task-list.component';
 import { TaskItem, TaskPriority } from '../../core/models/task.model';
+import { localDateKey } from '../../core/utils/date';
 
 export interface TaskCategoryOption {
   key: string;
@@ -28,7 +28,7 @@ export const TASK_CATEGORIES: TaskCategoryOption[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [BentoStatsComponent, AiInsightCardComponent, FocusTaskListComponent, FormsModule],
+  imports: [BentoStatsComponent, FocusTaskListComponent, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html'
 })
@@ -37,9 +37,10 @@ export class DashboardComponent {
   readonly authService = inject(GoogleAuthService);
   readonly langService = inject(LanguageService);
   readonly navigateToPlanner = output<void>();
+  readonly requestSignIn = output<void>();
 
   // Date management: defaults to today, editable via calendar
-  readonly selectedDate = signal<string>(new Date().toISOString().split('T')[0]);
+  readonly selectedDate = this.taskService.selectedDate;
 
   readonly formattedDateLabel = computed(() => {
     const raw = this.selectedDate();
@@ -90,7 +91,7 @@ export class DashboardComponent {
   readonly newTaskTitle = signal<string>('');
   readonly newTaskCategory = signal<string>('Personal');
   readonly newTaskPriority = signal<TaskPriority>('MEDIUM');
-  readonly newTaskDate = signal<string>(new Date().toISOString().split('T')[0]);
+  readonly newTaskDate = signal<string>(localDateKey());
   readonly isNewTaskCategoryDropdownOpen = signal<boolean>(false);
 
   // Form validity for Create Task button: title, priority, category, and minimum 30 minutes duration
@@ -114,7 +115,7 @@ export class DashboardComponent {
   readonly editTitle = signal<string>('');
   readonly editCategory = signal<string>('Personal');
   readonly editPriority = signal<TaskPriority>('MEDIUM');
-  readonly editDate = signal<string>(new Date().toISOString().split('T')[0]);
+  readonly editDate = signal<string>(localDateKey());
   readonly isEditTaskCategoryDropdownOpen = signal<boolean>(false);
 
   toggleNewTaskCategoryDropdown(): void {
@@ -295,7 +296,7 @@ export class DashboardComponent {
   }
 
   scrollToOverdueTask(): void {
-    const overdueTask = this.taskService.dashboardData().tasks.find((t) => t.status !== 'DONE' && t.isOverdue);
+    const overdueTask = this.taskService.visibleTasks().find((t) => t.status !== 'DONE' && t.isOverdue);
     if (overdueTask) {
       this.highlightedTaskId.set(overdueTask.id);
       const el = document.getElementById(`task-card-${overdueTask.id}`);
@@ -315,7 +316,7 @@ export class DashboardComponent {
     this.editTitle.set(task.title);
     this.editCategory.set(task.category || 'Personal');
     this.editPriority.set(task.priority || 'MEDIUM');
-    this.editDate.set(task.dueDate || new Date().toISOString().split('T')[0]);
+    this.editDate.set(task.dueDate || localDateKey());
     this.isEditTaskCategoryDropdownOpen.set(false);
 
     const start = this.parseTimeString(task.scheduledStart);
@@ -371,7 +372,7 @@ export class DashboardComponent {
     this.newTaskTitle.set('');
     this.newTaskPriority.set('MEDIUM');
     this.newTaskCategory.set('Personal');
-    this.newTaskDate.set(new Date().toISOString().split('T')[0]);
+    this.newTaskDate.set(this.selectedDate());
     this.isNewTaskCategoryDropdownOpen.set(false);
     this.showNewTaskModal.set(true);
   }

@@ -5,6 +5,19 @@ import { LanguageService } from './language.service';
 import { TaskService } from './task.service';
 import { ProposedPlanTask, WeeklyPlanResponse } from '../models/planner.model';
 import { TaskItem } from '../models/task.model';
+import { localDateKey } from '../utils/date';
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Next date (today or later) that falls on the weekday a planner label starts with, e.g. "Tue Oct 25". */
+function nextDateForWeekdayLabel(label: string): string {
+  const target = WEEKDAYS.indexOf(label.slice(0, 3));
+  const date = new Date();
+  if (target >= 0) {
+    date.setDate(date.getDate() + ((target - date.getDay() + 7) % 7));
+  }
+  return localDateKey(date);
+}
 
 const INITIAL_WEEKLY_PLAN: WeeklyPlanResponse = {
   aiModelVersion: 'AI Model v2.4 Active',
@@ -175,14 +188,14 @@ export class PlannerService {
           title: p.title,
           priority: p.priority,
           status: 'PENDING',
-          scheduledStart: p.dateLabel,
-          scheduledEnd: 'AI Scheduled',
+          scheduledStart: undefined,
+          scheduledEnd: undefined,
           durationMinutes: p.durationMinutes,
           durationLabel: p.durationLabel,
           category: p.tag,
           completedSubtasks: 0,
-          totalSubtasks: 2,
-          dueDate: '2026-10-25'
+          totalSubtasks: 0,
+          dueDate: nextDateForWeekdayLabel(p.dateLabel)
         }));
 
         this.taskService.addAcceptedTasksFromPlanner(mappedTasks);

@@ -127,6 +127,12 @@ export interface TranslationDictionary {
   signInAndConnect: string;
   continueWithGoogle: string;
   signInFailed: string;
+  loadingTasks: string;
+  signInToStartTitle: string;
+  signInToStartBody: string;
+  noTasksForDay: string;
+  tasksLoadError: string;
+  tasksSaveError: string;
   toastConnectedAs: string;
   toastDisconnected: string;
   toastReanalyzed: string;
@@ -256,6 +262,12 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   signInAndConnect: 'Sign in & Connect',
   continueWithGoogle: 'Continue with Google',
   signInFailed: 'Google sign-in failed. Please try again.',
+  loadingTasks: 'Loading your tasks...',
+  signInToStartTitle: 'Plan your day with Flowday',
+  signInToStartBody: 'Sign in with Google to save your tasks and use them on every device.',
+  noTasksForDay: 'No tasks for this day yet.',
+  tasksLoadError: 'Could not load your tasks. Check your connection.',
+  tasksSaveError: 'Could not save the change. Please try again.',
   toastConnectedAs: 'Connected as {email}',
   toastDisconnected: 'Google Account disconnected',
   toastReanalyzed: 'AI re-analyzed workload & balanced Thursday capacity',
@@ -385,6 +397,12 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   signInAndConnect: 'התחבר וחבר',
   continueWithGoogle: 'המשך עם Google',
   signInFailed: 'ההתחברות עם Google נכשלה. נסה שוב.',
+  loadingTasks: 'טוען את המשימות שלך...',
+  signInToStartTitle: 'תכנן את היום שלך עם Flowday',
+  signInToStartBody: 'התחבר עם Google כדי לשמור את המשימות שלך ולהשתמש בהן בכל מכשיר.',
+  noTasksForDay: 'אין עדיין משימות ליום הזה.',
+  tasksLoadError: 'לא ניתן לטעון את המשימות. בדוק את החיבור.',
+  tasksSaveError: 'לא ניתן לשמור את השינוי. נסה שוב.',
   toastConnectedAs: 'מחובר כ-{email}',
   toastDisconnected: 'חשבון Google נותק',
   toastReanalyzed: 'הבינה המלאכותית ניתחה מחדש את העומס ואיזנה את יום חמישי',

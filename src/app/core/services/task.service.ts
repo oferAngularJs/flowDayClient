@@ -1,14 +1,73 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { ApiService } from './api.service';
+import { Injectable, NgZone, computed, effect, inject, signal } from '@angular/core';
+import {
+  DocumentData,
+  QueryDocumentSnapshot,
+  Unsubscribe,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch
+} from 'firebase/firestore';
+import { firestore } from '../firebase/firebase';
 import { ToastService } from './toast.service';
 import { LanguageService } from './language.service';
+import { GoogleAuthService } from './google-auth.service';
 import { CreateTaskPayload, DashboardSummary, TaskItem } from '../models/task.model';
+import { formatDuration, localDateKey, timeToMinutes } from '../utils/date';
 
-function formatDuration(mins: number): string {
-  if (mins < 60) return `${mins}m`;
-  const h = Math.floor(mins / 60);
-  const m = mins % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+export { formatDuration };
+
+/** Fields stored in Firestore at users/{uid}/tasks/{taskId}. Derived fields are computed client-side. */
+type StoredTask = Omit<TaskItem, 'id' | 'durationLabel' | 'isOverdue'>;
+
+const STORED_FIELDS: (keyof StoredTask)[] = [
+  'title',
+  'priority',
+  'status',
+  'scheduledStart',
+  'scheduledEnd',
+  'durationMinutes',
+  'category',
+  'completedSubtasks',
+  'totalSubtasks',
+  'dueDate'
+];
+
+/** Old browser-only task cache from before Firestore; removed on startup. */
+const LEGACY_STORAGE_KEY_TASKS = 'flowday_tasks';
+
+function pickStored(task: Partial<TaskItem>): Partial<StoredTask> {
+  const out: Partial<StoredTask> = {};
+  for (const key of STORED_FIELDS) {
+    if (task[key] !== undefined) {
+      (out as Record<string, unknown>)[key] = task[key];
+    }
+  }
+  return out;
+}
+
+function fromSnapshot(snap: QueryDocumentSnapshot<DocumentData>, today: string): TaskItem {
+  const data = snap.data() as StoredTask;
+  const durationMinutes = Number(data.durationMinutes) || 0;
+  return {
+    id: snap.id,
+    title: data.title ?? '',
+    priority: data.priority ?? 'MEDIUM',
+    status: data.status ?? 'PENDING',
+    scheduledStart: data.scheduledStart,
+    scheduledEnd: data.scheduledEnd,
+    durationMinutes,
+    durationLabel: formatDuration(durationMinutes),
+    category: data.category ?? 'Personal',
+    completedSubtasks: data.completedSubtasks ?? 0,
+    totalSubtasks: data.totalSubtasks ?? 0,
+    dueDate: data.dueDate ?? today,
+    isOverdue: data.status !== 'DONE' && !!data.dueDate && data.dueDate < today
+  };
 }
 
 export function computeDashboardStats(tasks: TaskItem[]): {
@@ -16,194 +75,173 @@ export function computeDashboardStats(tasks: TaskItem[]): {
   totalWorkloadLabel: string;
   stats: DashboardSummary['stats'];
 } {
-  const total = tasks.length;
   const completedList = tasks.filter((t) => t.status === 'DONE');
   const pendingList = tasks.filter((t) => t.status !== 'DONE');
-
-  const completedToday = completedList.length;
-  const completionRate = total > 0 ? Math.round((completedToday / total) * 100) : 0;
-
-  const remainingMinutes = pendingList.reduce((acc, t) => acc + (t.durationMinutes || 0), 0);
-  const workloadLeftLabel = formatDuration(remainingMinutes);
-
-  const totalMinutes = tasks.reduce((acc, t) => acc + (t.durationMinutes || 0), 0);
-  const totalWorkloadLabel = formatDuration(totalMinutes);
-
   const overdueList = pendingList.filter((t) => t.isOverdue);
-  const overdueCount = overdueList.length;
-  const overdueTaskTitle = overdueList.length > 0 ? overdueList[0].title : undefined;
-
-  const highPriorityCount = pendingList.filter(
-    (t) => t.priority === 'HIGH' || t.priority === 'URGENT'
-  ).length;
+  const sumMinutes = (list: TaskItem[]) => list.reduce((acc, t) => acc + (t.durationMinutes || 0), 0);
 
   return {
-    highPriorityCount,
-    totalWorkloadLabel,
+    highPriorityCount: pendingList.filter((t) => t.priority === 'HIGH' || t.priority === 'URGENT').length,
+    totalWorkloadLabel: formatDuration(sumMinutes(tasks)),
     stats: {
-      assignedToday: total,
-      completedToday,
-      completionRate,
-      workloadLeftLabel,
-      overdueCount,
-      overdueTaskTitle
+      assignedToday: tasks.length,
+      completedToday: completedList.length,
+      completionRate: tasks.length > 0 ? Math.round((completedList.length / tasks.length) * 100) : 0,
+      workloadLeftLabel: formatDuration(sumMinutes(pendingList)),
+      overdueCount: overdueList.length,
+      overdueTaskTitle: overdueList[0]?.title
     }
   };
 }
 
-const STORAGE_KEY_TASKS = 'flowday_tasks';
-
-function getStoredTasks(): TaskItem[] | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_TASKS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {}
-  return null;
-}
-
-function saveStoredTasks(tasks: TaskItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(tasks));
-  } catch {}
-}
-
-const INITIAL_TASKS: TaskItem[] = getStoredTasks() || [
-  {
-    id: 'task-1',
-    title: 'Client Architecture Sign-off',
-    priority: 'URGENT',
-    status: 'PENDING',
-    scheduledStart: '09:30 AM',
-    scheduledEnd: '10:15 AM',
-    durationMinutes: 45,
-    durationLabel: '45m',
-    category: 'Engineering',
-    completedSubtasks: 2,
-    totalSubtasks: 3,
-    dueDate: '2026-10-24',
-    isOverdue: true
-  },
-  {
-    id: 'task-2',
-    title: 'Review Q4 design spec',
-    priority: 'HIGH',
-    status: 'PENDING',
-    scheduledStart: '11:30 AM',
-    scheduledEnd: '12:15 PM',
-    durationMinutes: 45,
-    durationLabel: '45m',
-    category: 'Product',
-    completedSubtasks: 1,
-    totalSubtasks: 4,
-    dueDate: '2026-10-24'
-  },
-  {
-    id: 'task-3',
-    title: 'Daily engineering standup & blocker review',
-    priority: 'MEDIUM',
-    status: 'DONE',
-    scheduledStart: '09:00 AM',
-    scheduledEnd: '09:30 AM',
-    durationMinutes: 30,
-    durationLabel: '30m',
-    category: 'Engineering',
-    completedSubtasks: 1,
-    totalSubtasks: 1,
-    dueDate: '2026-10-24'
-  }
-];
-
-const initialComputed = computeDashboardStats(INITIAL_TASKS);
-
-const INITIAL_DASHBOARD_DATA: DashboardSummary = {
-  dateLabel: 'Thursday, Oct 24',
-  sprintCode: 'Sprint W43',
-  userName: 'Alex',
-  highPriorityCount: initialComputed.highPriorityCount,
-  totalWorkloadLabel: initialComputed.totalWorkloadLabel,
-  stats: initialComputed.stats,
-  aiInsight: {
-    id: 'insight-w43-1',
-    timestampLabel: 'Just now',
-    messagePrefix: 'Thursday is getting busy. Consider moving',
-    highlightedTaskTitle: '"Review Q4 design spec"',
-    highlightedTaskDuration: '(45m)',
-    messageSuffix: 'to Friday to balance your focus capacity.',
-    suggestedDay: 'Friday'
-  },
-  tasks: INITIAL_TASKS
+/** Placeholder insight until real AI suggestions exist (not shown to signed-in users). */
+const DEMO_INSIGHT: DashboardSummary['aiInsight'] = {
+  id: 'insight-demo',
+  timestampLabel: 'Just now',
+  messagePrefix: 'Thursday is getting busy. Consider moving',
+  highlightedTaskTitle: '"Review Q4 design spec"',
+  highlightedTaskDuration: '(45m)',
+  messageSuffix: 'to Friday to balance your focus capacity.',
+  suggestedDay: 'Friday'
 };
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
-  private readonly api = inject(ApiService);
   private readonly toast = inject(ToastService);
   private readonly lang = inject(LanguageService);
+  private readonly auth = inject(GoogleAuthService);
+  private readonly zone = inject(NgZone);
 
-  readonly dashboardData = signal<DashboardSummary>(INITIAL_DASHBOARD_DATA);
+  /** All of the signed-in user's tasks, kept live from Firestore. */
+  readonly allTasks = signal<TaskItem[]>([]);
   readonly isLoading = signal<boolean>(false);
   readonly sortAscending = signal<boolean>(true);
+  /** Day shown on the dashboard (YYYY-MM-DD, local time). */
+  readonly selectedDate = signal<string>(localDateKey());
 
-  readonly pendingTasks = computed(() => {
-    const tasks = this.dashboardData().tasks.filter((t) => t.status !== 'DONE');
-    return this.sortAscending() ? tasks : [...tasks].reverse();
+  private unsubscribe: Unsubscribe | null = null;
+  private listeningUid: string | null = null;
+
+  /** Tasks due on the selected day; when viewing today, unfinished overdue tasks are included too. */
+  readonly visibleTasks = computed(() => {
+    const selected = this.selectedDate();
+    const today = localDateKey();
+    const direction = this.sortAscending() ? 1 : -1;
+    return this.allTasks()
+      .filter((t) => t.dueDate === selected || (selected === today && t.isOverdue))
+      .sort((a, b) => {
+        // Overdue first, then by start time; tasks without a time go last.
+        if (!!a.isOverdue !== !!b.isOverdue) return a.isOverdue ? -1 : 1;
+        const ta = timeToMinutes(a.scheduledStart);
+        const tb = timeToMinutes(b.scheduledStart);
+        if (ta === null || tb === null) return ta === null ? (tb === null ? 0 : 1) : -1;
+        return (ta - tb) * direction;
+      });
   });
 
-  readonly completedTasks = computed(() =>
-    this.dashboardData().tasks.filter((t) => t.status === 'DONE')
-  );
+  readonly dashboardData = computed<DashboardSummary>(() => {
+    const tasks = this.visibleTasks();
+    const stats = computeDashboardStats(tasks);
+    return {
+      dateLabel: this.selectedDate(),
+      sprintCode: '',
+      userName: this.auth.currentUser()?.firstName ?? '',
+      highPriorityCount: stats.highPriorityCount,
+      totalWorkloadLabel: stats.totalWorkloadLabel,
+      stats: stats.stats,
+      aiInsight: DEMO_INSIGHT,
+      tasks
+    };
+  });
 
-  loadDashboardFromServer(): void {
-    this.isLoading.set(true);
-    this.api.get<DashboardSummary>('/dashboard', this.dashboardData()).subscribe((data) => {
-      this.dashboardData.set(data);
+  readonly pendingTasks = computed(() => this.visibleTasks().filter((t) => t.status !== 'DONE'));
+  readonly completedTasks = computed(() => this.visibleTasks().filter((t) => t.status === 'DONE'));
+
+  constructor() {
+    try {
+      localStorage.removeItem(LEGACY_STORAGE_KEY_TASKS);
+    } catch {
+      // Storage unavailable; nothing to clean.
+    }
+
+    // Follow the signed-in user: start listening to their tasks, or clear on sign-out.
+    effect(
+      () => {
+        const uid = this.auth.currentUser()?.id ?? null;
+        this.listenToUser(uid);
+      },
+      { allowSignalWrites: true }
+    );
+  }
+
+  private listenToUser(uid: string | null): void {
+    if (uid === this.listeningUid) return;
+    this.unsubscribe?.();
+    this.unsubscribe = null;
+    this.listeningUid = uid;
+    this.allTasks.set([]);
+
+    if (!uid) {
       this.isLoading.set(false);
-    });
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.unsubscribe = onSnapshot(
+      collection(firestore, 'users', uid, 'tasks'),
+      (snapshot) => {
+        const today = localDateKey();
+        const tasks = snapshot.docs.map((d) => fromSnapshot(d, today));
+        this.zone.run(() => {
+          this.allTasks.set(tasks);
+          this.isLoading.set(false);
+        });
+      },
+      (error) => {
+        console.error('Loading tasks from Firestore failed', error);
+        this.zone.run(() => {
+          this.isLoading.set(false);
+          this.toast.show(this.lang.translations().tasksLoadError);
+        });
+      }
+    );
+  }
+
+  private tasksCollection() {
+    const uid = this.auth.currentUser()?.id;
+    return uid ? collection(firestore, 'users', uid, 'tasks') : null;
+  }
+
+  private reportSaveError(error: unknown): void {
+    console.error('Saving task to Firestore failed', error);
+    this.zone.run(() => this.toast.show(this.lang.translations().tasksSaveError));
   }
 
   toggleTaskStatus(taskId: string): void {
-    const current = this.dashboardData();
-    const target = current.tasks.find((t) => t.id === taskId);
-    if (!target) return;
+    const col = this.tasksCollection();
+    const target = this.allTasks().find((t) => t.id === taskId);
+    if (!col || !target) return;
 
     const newStatus = target.status === 'DONE' ? 'PENDING' : 'DONE';
-    const updatedTask: TaskItem = { ...target, status: newStatus };
-
-    // Immediately update state synchronously
-    this.dashboardData.update((state) => {
-      const updatedTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
-      saveStoredTasks(updatedTasks);
-      const computed = computeDashboardStats(updatedTasks);
-      return {
-        ...state,
-        highPriorityCount: computed.highPriorityCount,
-        totalWorkloadLabel: computed.totalWorkloadLabel,
-        stats: computed.stats,
-        tasks: updatedTasks
-      };
-    });
-
-    this.api
-      .patch<TaskItem, { status: string }>(`/tasks/${taskId}/status`, { status: newStatus }, updatedTask)
-      .subscribe((savedTask) => {
-        this.toast.show(
-          newStatus === 'DONE'
-            ? this.lang.t('toastTaskCompleted', { title: target.title })
-            : this.lang.t('toastTaskReopened', { title: target.title }),
-          `PATCH /api/v1/tasks/${taskId}/status`
-        );
-      });
+    // Firestore applies the change to the local cache immediately, so the UI updates instantly.
+    updateDoc(doc(col, taskId), { status: newStatus, updatedAt: serverTimestamp() }).catch((e) =>
+      this.reportSaveError(e)
+    );
+    this.toast.show(
+      newStatus === 'DONE'
+        ? this.lang.t('toastTaskCompleted', { title: target.title })
+        : this.lang.t('toastTaskReopened', { title: target.title })
+    );
   }
 
-  createNewTask(payload: CreateTaskPayload): TaskItem {
-    const today = new Date().toISOString().split('T')[0];
-    const newTask: TaskItem = {
-      id: `task-${Date.now()}`,
+  /** Returns the new task (with its id) right away; the write syncs in the background. */
+  createNewTask(payload: CreateTaskPayload): TaskItem | null {
+    const col = this.tasksCollection();
+    if (!col) return null;
+
+    const ref = doc(col);
+    const task: TaskItem = {
+      id: ref.id,
       title: payload.title,
       priority: payload.priority,
       status: 'PENDING',
@@ -214,89 +252,54 @@ export class TaskService {
       category: payload.category,
       completedSubtasks: 0,
       totalSubtasks: 0,
-      dueDate: payload.dueDate || today
+      dueDate: payload.dueDate || localDateKey()
     };
 
-    // Synchronously insert newTask into state immediately so it displays instantly on mobile/desktop
-    this.dashboardData.update((state) => {
-      const updatedTasks = [newTask, ...state.tasks];
-      saveStoredTasks(updatedTasks);
-      const computed = computeDashboardStats(updatedTasks);
-      return {
-        ...state,
-        highPriorityCount: computed.highPriorityCount,
-        totalWorkloadLabel: computed.totalWorkloadLabel,
-        stats: computed.stats,
-        tasks: updatedTasks
-      };
-    });
-
-    // Also persist through API
-    this.api.post<TaskItem, CreateTaskPayload>('/tasks', payload, newTask).subscribe((created) => {
-      this.toast.show(this.lang.t('toastTaskCreated', { title: created.title }), 'POST /api/v1/tasks');
-    });
-
-    return newTask;
+    setDoc(ref, {
+      ...pickStored(task),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }).catch((e) => this.reportSaveError(e));
+    this.toast.show(this.lang.t('toastTaskCreated', { title: task.title }));
+    return task;
   }
 
   updateTask(taskId: string, changes: Partial<TaskItem>): void {
-    const current = this.dashboardData();
-    const target = current.tasks.find((t) => t.id === taskId);
-    if (!target) return;
+    const col = this.tasksCollection();
+    const target = this.allTasks().find((t) => t.id === taskId);
+    if (!col || !target) return;
 
-    const dur = changes.durationMinutes ?? target.durationMinutes;
-    const updatedTask: TaskItem = {
-      ...target,
-      ...changes,
-      durationMinutes: dur,
-      durationLabel: formatDuration(dur)
-    };
-
-    this.dashboardData.update((state) => {
-      const updatedTasks = state.tasks.map((t) => (t.id === taskId ? updatedTask : t));
-      saveStoredTasks(updatedTasks);
-      const computed = computeDashboardStats(updatedTasks);
-      return {
-        ...state,
-        highPriorityCount: computed.highPriorityCount,
-        totalWorkloadLabel: computed.totalWorkloadLabel,
-        stats: computed.stats,
-        tasks: updatedTasks
-      };
-    });
-
-    this.api.patch<TaskItem, Partial<TaskItem>>(`/tasks/${taskId}`, changes, updatedTask).subscribe((savedTask) => {
-      this.toast.show(this.lang.t('toastTaskUpdated', { title: savedTask.title }), `PATCH /api/v1/tasks/${taskId}`);
-    });
+    updateDoc(doc(col, taskId), { ...pickStored(changes), updatedAt: serverTimestamp() }).catch((e) =>
+      this.reportSaveError(e)
+    );
+    this.toast.show(this.lang.t('toastTaskUpdated', { title: changes.title ?? target.title }));
   }
 
+  deleteTask(taskId: string): void {
+    const col = this.tasksCollection();
+    if (!col) return;
+    deleteDoc(doc(col, taskId)).catch((e) => this.reportSaveError(e));
+  }
+
+  /** Demo action from the AI insight card (no real rescheduling yet). */
   smartRescheduleTask(): void {
-    this.api
-      .post<{ movedTaskId: string }, { targetDay: string }>(
-        '/tasks/smart-reschedule',
-        { targetDay: 'Friday' },
-        { movedTaskId: 'task-2' }
-      )
-      .subscribe(() => {
-        this.toast.show(
-          this.lang.translations().toastSmartReschedule,
-          'POST /api/v1/tasks/smart-reschedule'
-        );
-      });
+    this.toast.show(this.lang.translations().toastSmartReschedule);
   }
 
+  /** Saves tasks accepted in the weekly planner as real tasks. */
   addAcceptedTasksFromPlanner(newTasks: TaskItem[]): void {
-    this.dashboardData.update((state) => {
-      const updatedTasks = [...newTasks, ...state.tasks];
-      const computed = computeDashboardStats(updatedTasks);
-      return {
-        ...state,
-        highPriorityCount: computed.highPriorityCount,
-        totalWorkloadLabel: computed.totalWorkloadLabel,
-        stats: computed.stats,
-        tasks: updatedTasks
-      };
-    });
+    const col = this.tasksCollection();
+    if (!col) return;
+
+    const batch = writeBatch(firestore);
+    for (const task of newTasks) {
+      batch.set(doc(col), {
+        ...pickStored(task),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+    batch.commit().catch((e) => this.reportSaveError(e));
   }
 
   toggleSortOrder(): void {

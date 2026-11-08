@@ -1,6 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from 'firebase/firestore';
 
 /**
  * Firebase web app config for the "flowday-b7fb6" project.
@@ -25,4 +29,11 @@ setPersistence(firebaseAuth, browserLocalPersistence).catch(() => {
   // Falls back to Firebase's default persistence if local storage is unavailable.
 });
 
-export const firestore = getFirestore(firebaseApp);
+/**
+ * Offline-first: data is cached on the device (IndexedDB), so the app opens instantly
+ * and edits made without a connection sync automatically when the phone is back online.
+ */
+export const firestore = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  ignoreUndefinedProperties: true
+});

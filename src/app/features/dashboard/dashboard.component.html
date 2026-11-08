@@ -29,6 +29,29 @@
       </div>
     </div>
 
+    @if (authService.isAuthLoading() || (authService.isConnected() && taskService.isLoading())) {
+    <!-- Restoring the session / first load of the user's tasks -->
+    <div class="flex items-center justify-center gap-2 py-12 text-on-surface-variant text-body-sm">
+      <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+      <span>{{ langService.translations().loadingTasks }}</span>
+    </div>
+    } @else if (!authService.isConnected()) {
+    <!-- Signed out: invite the user to sign in instead of showing demo data -->
+    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-6 text-center space-y-3">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-primary via-secondary to-primary-container text-white flex items-center justify-center shadow-sm">
+        <span class="material-symbols-outlined text-[26px]">waves</span>
+      </div>
+      <h2 class="text-headline-sm font-headline-sm text-on-surface">{{ langService.translations().signInToStartTitle }}</h2>
+      <p class="text-body-sm text-on-surface-variant">{{ langService.translations().signInToStartBody }}</p>
+      <button
+        type="button"
+        (click)="requestSignIn.emit()"
+        class="mx-auto px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[16px]">login</span>
+        <span>{{ langService.translations().continueWithGoogle }}</span>
+      </button>
+    </div>
+    } @else {
     <!-- Quick Action: New Task Strip -->
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
@@ -54,12 +77,6 @@
       (scrollToTodayTasks)="scrollToTodayTasks()"
       (scrollToOverdueTask)="scrollToOverdueTask()" />
 
-    <!-- Flowday AI Insight Card -->
-    <app-ai-insight-card
-      [insight]="data.aiInsight"
-      (inspectPlanner)="navigateToPlanner.emit()"
-      (smartReschedule)="onSmartReschedule()" />
-
     <!-- Today's Focus Task List -->
     <app-focus-task-list
       [pendingTasks]="taskService.pendingTasks()"
@@ -68,6 +85,21 @@
       (toggleTask)="taskService.toggleTaskStatus($event)"
       (sortByTime)="taskService.toggleSortOrder()"
       (editTask)="openEditTask($event)" />
+
+    @if (data.tasks.length === 0) {
+      <div class="rounded-xl border border-dashed border-outline-variant/60 p-5 text-center space-y-2">
+        <span class="material-symbols-outlined text-[28px] text-primary">event_available</span>
+        <p class="text-body-sm text-on-surface-variant">{{ langService.translations().noTasksForDay }}</p>
+        <button
+          type="button"
+          (click)="openNewTaskModal()"
+          class="px-3 py-1.5 rounded-lg bg-surface-container text-primary font-label-md text-label-md inline-flex items-center gap-1 active:scale-95 transition-transform cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          <span>{{ langService.translations().newTask }}</span>
+        </button>
+      </div>
+    }
+    }
   </section>
 
   <!-- New Task Modal Dialog -->
