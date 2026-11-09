@@ -9,9 +9,48 @@ export const FLOWDAY_TASKLIST_TITLE = 'Flowday';
 export class GoogleApiError extends Error {
   constructor(
     readonly status: number,
-    message: string
+    message: string,
+    /** Google's machine-readable reason, e.g. "insufficientPermissions" or "accessNotConfigured". */
+    readonly reason: string = ''
   ) {
     super(message);
+  }
+
+  /** The user didn't grant Calendar/Tasks access on Google's consent screen. */
+  get isMissingPermission(): boolean {
+    return (
+      this.status === 403 &&
+      /insufficientPermissions|ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficient authentication scopes/i.test(
+        `${this.reason} ${this.message}`
+      )
+    );
+  }
+
+  /** The Calendar or Tasks API isn't enabled in the Google Cloud project. */
+  get isApiDisabled(): boolean {
+    return (
+      this.status === 403 &&
+      /accessNotConfigured|SERVICE_DISABLED|has not been used in project|is disabled/i.test(
+        `${this.reason} ${this.message}`
+      )
+    );
+  }
+}
+
+/** Pulls Google's error reason out of a JSON error body. */
+function parseErrorReason(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: { errors?: { reason?: string }[]; status?: string; details?: { reason?: string }[] };
+    };
+    return (
+      parsed.error?.errors?.[0]?.reason ||
+      parsed.error?.details?.find((d) => d.reason)?.reason ||
+      parsed.error?.status ||
+      ''
+    );
+  } catch {
+    return '';
   }
 }
 
@@ -143,12 +182,14 @@ export class GoogleApiService {
       body: body !== undefined ? JSON.stringify(body) : undefined
     });
 
-    if (res.status === 401) {
-      this.auth.invalidateGoogleAccess();
-    }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new GoogleApiError(res.status, `${method} ${url} failed: ${res.status} ${text}`);
+      const error = new GoogleApiError(res.status, `${method} ${url} failed: ${res.status} ${text}`, parseErrorReason(text));
+      if (res.status === 401 || error.isMissingPermission) {
+        // Expired token or missing Calendar/Tasks permission: the UI offers "Connect Google Calendar" again.
+        this.auth.invalidateGoogleAccess(error.isMissingPermission);
+      }
+      throw error;
     }
     if (res.status === 204) {
       return undefined as T;

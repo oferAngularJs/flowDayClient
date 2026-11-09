@@ -16,12 +16,13 @@ export interface CalendarDayEvent {
   link?: string;
 }
 
-const COMPLETED_PREFIX = '✓ ';
 /** Google Calendar's gray ("Graphite") color, used for completed tasks. */
 const COMPLETED_COLOR_ID = '8';
 
 function needsSync(task: TaskItem): boolean {
-  return (task.revision ?? 0) > (task.googleSyncedRevision ?? 0);
+  // Changed since the last push, or never pushed at all (e.g. tasks created before Google sync existed).
+  const neverSynced = !task.googleEventId && !task.googleTaskId;
+  return neverSynced || (task.revision ?? 0) > (task.googleSyncedRevision ?? 0);
 }
 
 function isTimed(task: TaskItem): boolean {
@@ -167,19 +168,21 @@ export class GoogleSyncService {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const done = task.status === 'DONE';
 
+    // Same title and same hours on the same day as the Flowday task.
     const body: Partial<GoogleCalendarEvent> & { description: string } = {
-      summary: (done ? COMPLETED_PREFIX : '') + task.title,
+      summary: task.title,
       description: 'Created by Flowday',
       start: { dateTime: localDateTime(task.dueDate, start), timeZone },
       end: { dateTime: localDateTime(task.dueDate, end), timeZone },
-      // null clears a previously set color when a task is reopened.
-      colorId: (done ? COMPLETED_COLOR_ID : null) as unknown as string,
-      extendedProperties: { private: { flowdayTaskId: task.id } }
+      extendedProperties: { private: { flowdayTaskId: task.id } },
+      ...(done ? { colorId: COMPLETED_COLOR_ID } : {})
     };
 
     if (task.googleEventId) {
       try {
-        return (await this.api.patchEvent(task.googleEventId, body)).id;
+        // On update, null clears the gray color when a task is reopened.
+        const patch = done ? body : { ...body, colorId: null as unknown as string };
+        return (await this.api.patchEvent(task.googleEventId, patch)).id;
       } catch (err) {
         if (!isNotFound(err)) throw err;
         // The event was deleted in Google Calendar: create it again.
@@ -214,7 +217,25 @@ export class GoogleSyncService {
     if (err instanceof GoogleApiError && err.status === 401) return; // UI already shows "Connect"
     if (this.errorShownForRun) return;
     this.errorShownForRun = true;
-    this.zone.run(() => this.toast.show(this.lang.translations().googleSyncError));
+    this.zone.run(() => this.toast.show(this.describeGoogleError(err, 'googleSyncError'), this.errorDetail(err)));
+  }
+
+  /** User-facing message for a Google API failure, with specific guidance for setup problems. */
+  private describeGoogleError(err: unknown, fallbackKey: 'googleSyncError' | 'googleEventsLoadError'): string {
+    const t = this.lang.translations();
+    if (err instanceof GoogleApiError) {
+      if (err.isMissingPermission) return t.googlePermissionMissing;
+      if (err.isApiDisabled) return t.googleApiDisabled;
+    }
+    return t[fallbackKey];
+  }
+
+  /** Short technical detail (HTTP status + Google reason) shown under the message for diagnosis. */
+  private errorDetail(err: unknown): string | undefined {
+    if (err instanceof GoogleApiError) {
+      return `Google ${err.status}${err.reason ? ` · ${err.reason}` : ''}`;
+    }
+    return err instanceof Error ? err.message.slice(0, 80) : undefined;
   }
 
   // ---------- Google -> Flowday ----------
@@ -262,7 +283,7 @@ export class GoogleSyncService {
         this.dayEvents.set([]);
         this.isLoadingEvents.set(false);
         if (!(err instanceof GoogleApiError && err.status === 401)) {
-          this.toast.show(this.lang.translations().googleEventsLoadError);
+          this.toast.show(this.describeGoogleError(err, 'googleEventsLoadError'), this.errorDetail(err));
         }
       });
     }

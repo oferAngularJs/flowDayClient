@@ -106,6 +106,8 @@ export class GoogleAuthService {
   readonly hasGoogleAccess = computed(() => !!this.googleToken());
 
   private initialized = false;
+  /** Set when Google said a permission is missing; the next reconnect asks for consent again. */
+  private forceConsent = false;
   private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
   checkAuthStatus(): void {
@@ -187,8 +189,14 @@ export class GoogleAuthService {
     }
   }
 
-  /** Called when Google rejects the token (401), so the UI offers to reconnect. */
-  invalidateGoogleAccess(): void {
+  /**
+   * Called when Google rejects the token, so the UI offers to reconnect.
+   * `permissionMissing`: Calendar/Tasks boxes weren't ticked — the next connect re-shows Google's consent screen.
+   */
+  invalidateGoogleAccess(permissionMissing = false): void {
+    if (permissionMissing) {
+      this.forceConsent = true;
+    }
     this.setGoogleToken(null);
   }
 
@@ -202,11 +210,19 @@ export class GoogleAuthService {
     const provider = new GoogleAuthProvider();
     GOOGLE_SCOPES.forEach((scope) => provider.addScope(scope));
     // Reconnecting goes straight to the signed-in account; a fresh sign-in shows the chooser.
-    provider.setCustomParameters(loginHint ? { login_hint: loginHint } : { prompt: 'select_account' });
+    // After a missing-permission error, show Google's consent screen so Calendar/Tasks can be ticked.
+    const params: Record<string, string> = loginHint ? { login_hint: loginHint } : { prompt: 'select_account' };
+    if (this.forceConsent) {
+      params['prompt'] = 'consent';
+    }
+    provider.setCustomParameters(params);
     return provider;
   }
 
   private storeAccessToken(uid: string, token: string | null): void {
+    if (token) {
+      this.forceConsent = false;
+    }
     this.setGoogleToken(token ? { uid, token, expiresAt: Date.now() + TOKEN_LIFETIME_MS } : null);
   }
 

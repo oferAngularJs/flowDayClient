@@ -143,6 +143,8 @@ export interface TranslationDictionary {
   allDay: string;
   googleSyncError: string;
   googleEventsLoadError: string;
+  googlePermissionMissing: string;
+  googleApiDisabled: string;
   toastConnectedAs: string;
   toastDisconnected: string;
   toastReanalyzed: string;
@@ -288,6 +290,8 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   allDay: 'All day',
   googleSyncError: 'Some tasks could not be synced to Google. Will retry.',
   googleEventsLoadError: 'Could not load your Google Calendar events.',
+  googlePermissionMissing: 'Flowday has no permission for your calendar. Tap "Connect Google Calendar" and tick the Calendar and Tasks boxes.',
+  googleApiDisabled: 'Google Calendar or Tasks API is not enabled in the Google Cloud project.',
   toastConnectedAs: 'Connected as {email}',
   toastDisconnected: 'Google Account disconnected',
   toastReanalyzed: 'AI re-analyzed workload & balanced Thursday capacity',
@@ -433,6 +437,8 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   allDay: 'כל היום',
   googleSyncError: 'חלק מהמשימות לא סונכרנו ל-Google. ננסה שוב.',
   googleEventsLoadError: 'לא ניתן לטעון את אירועי יומן Google.',
+  googlePermissionMissing: 'ל-Flowday אין הרשאה ליומן שלך. לחץ על "חבר את יומן Google" וסמן את תיבות היומן והמשימות.',
+  googleApiDisabled: 'ה-API של יומן Google או משימות Google לא מופעל בפרויקט ב-Google Cloud.',
   toastConnectedAs: 'מחובר כ-{email}',
   toastDisconnected: 'חשבון Google נותק',
   toastReanalyzed: 'הבינה המלאכותית ניתחה מחדש את העומס ואיזנה את יום חמישי',
