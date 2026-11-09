@@ -15,11 +15,23 @@
             "outputPath": "dist/flowday-angular",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.json",
-            "assets": ["src/assets"],
-            "styles": ["src/styles.css"],
-            "scripts": []
+            "assets": [
+              "src/assets",
+              {
+                "glob": "manifest.webmanifest",
+                "input": "src",
+                "output": "/"
+              }
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "scripts": [],
+            "serviceWorker": "ngsw-config.json"
           }
         },
         "serve": {

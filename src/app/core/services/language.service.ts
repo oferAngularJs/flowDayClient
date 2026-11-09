@@ -159,6 +159,19 @@ export interface TranslationDictionary {
   toastSortedEarliest: string;
   toastSortedLatest: string;
   toastTasksView: string;
+  installTitle: string;
+  installBody: string;
+  installButton: string;
+  installIosBody: string;
+  notNow: string;
+  inAppBrowserTitle: string;
+  inAppBrowserBody: string;
+  openInChrome: string;
+  copyLink: string;
+  linkCopied: string;
+  updateAvailable: string;
+  updateReload: string;
+  offlineNotice: string;
   toastAnalyticsView: string;
 }
 
@@ -306,6 +319,19 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   toastSortedEarliest: 'Sorted tasks by earliest time',
   toastSortedLatest: 'Sorted tasks by latest time',
   toastTasksView: 'Tasks view opened',
+  installTitle: 'Install Flowday',
+  installBody: 'Add it to your home screen and open it like an app.',
+  installButton: 'Install',
+  installIosBody: 'Tap the Share button, then "Add to Home Screen".',
+  notNow: 'Not now',
+  inAppBrowserTitle: 'Open in your browser',
+  inAppBrowserBody: 'Google sign-in is blocked inside this app. Open Flowday in Chrome or Safari.',
+  openInChrome: 'Open in Chrome',
+  copyLink: 'Copy link',
+  linkCopied: 'Link copied. Paste it in Chrome or Safari.',
+  updateAvailable: 'A new version of Flowday is ready.',
+  updateReload: 'Update',
+  offlineNotice: 'You are offline. Changes will sync when you reconnect.',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -453,6 +479,19 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   toastSortedEarliest: 'המשימות מוינו מהמוקדמת למאוחרת',
   toastSortedLatest: 'המשימות מוינו מהמאוחרת למוקדמת',
   toastTasksView: 'תצוגת המשימות נפתחה',
+  installTitle: 'התקן את Flowday',
+  installBody: 'הוסף למסך הבית ופתח כמו אפליקציה.',
+  installButton: 'התקן',
+  installIosBody: 'לחץ על כפתור השיתוף ואז על "הוסף למסך הבית".',
+  notNow: 'לא עכשיו',
+  inAppBrowserTitle: 'פתח בדפדפן',
+  inAppBrowserBody: 'ההתחברות עם Google חסומה בתוך האפליקציה הזו. פתח את Flowday ב-Chrome או ב-Safari.',
+  openInChrome: 'פתח ב-Chrome',
+  copyLink: 'העתק קישור',
+  linkCopied: 'הקישור הועתק. הדבק אותו ב-Chrome או ב-Safari.',
+  updateAvailable: 'גרסה חדשה של Flowday מוכנה.',
+  updateReload: 'עדכן',
+  offlineNotice: 'אין חיבור לאינטרנט. השינויים יסונכרנו כשהחיבור יחזור.',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 

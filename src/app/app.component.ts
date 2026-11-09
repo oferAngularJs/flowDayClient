@@ -3,6 +3,7 @@ import { TopBarComponent } from './shared/components/top-bar/top-bar.component';
 import { BottomNavComponent, NavTab } from './shared/components/bottom-nav/bottom-nav.component';
 import { GoogleOauthModalComponent } from './shared/components/google-oauth-modal/google-oauth-modal.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
+import { InstallBannerComponent } from './shared/components/install-banner/install-banner.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { PlannerComponent } from './features/planner/planner.component';
 import { TaskService } from './core/services/task.service';
@@ -12,6 +13,7 @@ import { ToastService } from './core/services/toast.service';
 import { ApiService } from './core/services/api.service';
 import { LanguageService } from './core/services/language.service';
 import { GoogleSyncService } from './core/services/google-sync.service';
+import { AppInstallService } from './core/services/app-install.service';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +23,7 @@ import { GoogleSyncService } from './core/services/google-sync.service';
     BottomNavComponent,
     GoogleOauthModalComponent,
     ToastComponent,
+    InstallBannerComponent,
     DashboardComponent,
     PlannerComponent
   ],
@@ -34,6 +37,7 @@ export class AppComponent implements OnInit {
   readonly toastService = inject(ToastService);
   readonly apiService = inject(ApiService);
   readonly langService = inject(LanguageService);
+  readonly appInstall = inject(AppInstallService);
   // Created at startup so Google sync runs on every screen, not only the dashboard.
   private readonly googleSync = inject(GoogleSyncService);
 

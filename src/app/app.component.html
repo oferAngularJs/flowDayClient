@@ -12,8 +12,9 @@
     (openServerLogModal)="isServerLogOpen.set(true)" />
 
   <app-toast />
+  <app-install-banner />
 
-  <main class="flex-1 overflow-y-auto pb-28 px-3 sm:px-4 pt-16 max-w-xl mx-auto w-full transition-all duration-150">
+  <main [class.pb-48]="appInstall.banner()" class="flex-1 overflow-y-auto pb-28 px-3 sm:px-4 pt-16 max-w-xl mx-auto w-full transition-all duration-150">
     @if (currentView() === 'dashboard') {
       <app-dashboard (navigateToPlanner)="switchView('planner')" (requestSignIn)="isGoogleModalOpen.set(true)" />
     } @else {
