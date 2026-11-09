@@ -55,6 +55,14 @@ import { LanguageService } from '../../../../core/services/language.service';
                   <app-priority-badge [priority]="task.priority" />
                   <button
                     type="button"
+                    (click)="moveTask.emit(task)"
+                    class="w-6 h-6 rounded flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
+                    [title]="langService.translations().taskActions"
+                    [attr.aria-label]="langService.translations().taskActions">
+                    <span class="material-symbols-outlined text-[16px]">more_vert</span>
+                  </button>
+                  <button
+                    type="button"
                     (click)="editTask.emit(task)"
                     class="w-6 h-6 rounded flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors cursor-pointer"
                     [title]="langService.translations().editTask">
@@ -69,6 +77,13 @@ import { LanguageService } from '../../../../core/services/language.service';
                 </span>
                 <span>•</span>
                 <span class="font-code-sm text-code-sm">{{ task.durationLabel }}</span>
+                @if (task.reminderMinutes) {
+                  <span>•</span>
+                  <span class="flex items-center gap-0.5">
+                    <span class="material-symbols-outlined text-[13px]">notifications</span>
+                    {{ langService.t('minutesShort', { minutes: task.reminderMinutes }) }}
+                  </span>
+                }
                 <span>•</span>
                 <span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] flex items-center gap-1 font-medium">
                   <span class="material-symbols-outlined text-[12px]">{{ getCategoryIcon(task.category) }}</span>
@@ -121,6 +136,8 @@ export class FocusTaskListComponent {
   readonly toggleTask = output<string>();
   readonly sortByTime = output<void>();
   readonly editTask = output<TaskItem>();
+  /** Opens the task actions sheet (move to another day / delete). */
+  readonly moveTask = output<TaskItem>();
 
   getCategoryIcon(cat: string): string {
     const map: Record<string, string> = {

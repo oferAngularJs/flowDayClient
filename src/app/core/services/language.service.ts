@@ -172,6 +172,22 @@ export interface TranslationDictionary {
   updateAvailable: string;
   updateReload: string;
   offlineNotice: string;
+  taskActions: string;
+  deleteTask: string;
+  deleteConfirm: string;
+  toastTaskDeleted: string;
+  moveTask: string;
+  moveToday: string;
+  moveNextDay: string;
+  moveNextWeek: string;
+  movePickDay: string;
+  moveButton: string;
+  toastTaskMoved: string;
+  notifyMe: string;
+  minutesBefore: string;
+  minutesShort: string;
+  reminderStartsIn: string;
+  notificationsBlocked: string;
   toastAnalyticsView: string;
 }
 
@@ -332,6 +348,22 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   updateAvailable: 'A new version of Flowday is ready.',
   updateReload: 'Update',
   offlineNotice: 'You are offline. Changes will sync when you reconnect.',
+  taskActions: 'Task actions',
+  deleteTask: 'Delete task',
+  deleteConfirm: 'Tap again to delete',
+  toastTaskDeleted: 'Deleted "{title}"',
+  moveTask: 'Move to another day',
+  moveToday: 'Today',
+  moveNextDay: 'Next day',
+  moveNextWeek: 'In a week',
+  movePickDay: 'Or pick a day',
+  moveButton: 'Move',
+  toastTaskMoved: 'Moved "{title}" to {date}',
+  notifyMe: 'Notify me',
+  minutesBefore: '{minutes} min before',
+  minutesShort: '{minutes}m',
+  reminderStartsIn: 'Starts in {minutes} min',
+  notificationsBlocked: 'Notifications are blocked. Allow them in your browser settings to get reminders.',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -492,6 +524,22 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   updateAvailable: 'גרסה חדשה של Flowday מוכנה.',
   updateReload: 'עדכן',
   offlineNotice: 'אין חיבור לאינטרנט. השינויים יסונכרנו כשהחיבור יחזור.',
+  taskActions: 'פעולות משימה',
+  deleteTask: 'מחק משימה',
+  deleteConfirm: 'לחץ שוב כדי למחוק',
+  toastTaskDeleted: 'המשימה "{title}" נמחקה',
+  moveTask: 'העבר ליום אחר',
+  moveToday: 'היום',
+  moveNextDay: 'יום למחרת',
+  moveNextWeek: 'בעוד שבוע',
+  movePickDay: 'או בחר יום',
+  moveButton: 'העבר',
+  toastTaskMoved: 'המשימה "{title}" הועברה ל-{date}',
+  notifyMe: 'הזכר לי',
+  minutesBefore: '{minutes} דק׳ לפני',
+  minutesShort: '{minutes} דק׳',
+  reminderStartsIn: 'מתחילה בעוד {minutes} דקות',
+  notificationsBlocked: 'ההתראות חסומות. אפשר אותן בהגדרות הדפדפן כדי לקבל תזכורות.',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 

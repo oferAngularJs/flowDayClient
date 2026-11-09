@@ -63,6 +63,7 @@ export interface GoogleCalendarEvent {
   start?: { dateTime?: string; date?: string; timeZone?: string };
   end?: { dateTime?: string; date?: string; timeZone?: string };
   colorId?: string;
+  reminders?: { useDefault: boolean; overrides?: { method: 'popup' | 'email'; minutes: number }[] };
   extendedProperties?: { private?: Record<string, string> };
 }
 

@@ -113,7 +113,8 @@
       [highlightedTaskId]="highlightedTaskId()"
       (toggleTask)="taskService.toggleTaskStatus($event)"
       (sortByTime)="taskService.toggleSortOrder()"
-      (editTask)="openEditTask($event)" />
+      (editTask)="openEditTask($event)"
+      (moveTask)="openMoveTask($event)" />
 
     <!-- Read-only events from the user's Google Calendar for the selected day -->
     @if (syncService.dayEvents().length > 0) {
@@ -223,6 +224,7 @@
                 type="date"
                 name="taskDate"
                 [ngModel]="newTaskDate()"
+                [min]="todayKey()"
                 (ngModelChange)="newTaskDate.set($event)"
                 class="w-full pl-9 pr-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors" />
             </div>
@@ -422,6 +424,32 @@
             </div>
           </div>
 
+          <!-- Notify me: reminder before the task starts -->
+          <div>
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              <span class="material-symbols-outlined text-[14px] align-[-2px]">notifications</span>
+              {{ langService.translations().notifyMe }}
+            </label>
+            <div class="grid grid-cols-4 gap-1.5" role="radiogroup" [attr.aria-label]="langService.translations().notifyMe">
+              @for (minutes of reminderOptions; track minutes) {
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="newTaskReminder() === minutes"
+                  (click)="newTaskReminder.set(minutes)"
+                  class="py-1.5 rounded-lg border text-label-md font-medium transition-colors cursor-pointer"
+                  [class.bg-primary]="newTaskReminder() === minutes"
+                  [class.text-on-primary]="newTaskReminder() === minutes"
+                  [class.border-primary]="newTaskReminder() === minutes"
+                  [class.border-outline-variant]="newTaskReminder() !== minutes"
+                  [class.text-on-surface-variant]="newTaskReminder() !== minutes">
+                  {{ langService.t('minutesShort', { minutes: minutes }) }}
+                </button>
+              }
+            </div>
+            <p class="mt-1 text-[11px] text-on-surface-variant">{{ langService.t('minutesBefore', { minutes: newTaskReminder() }) }}</p>
+          </div>
+
           <!-- Footer Actions -->
           <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">
             <button
@@ -504,6 +532,7 @@
                 type="date"
                 name="editTaskDate"
                 [ngModel]="editDate()"
+                [min]="task.dueDate < todayKey() ? task.dueDate : todayKey()"
                 (ngModelChange)="editDate.set($event)"
                 class="w-full pl-9 pr-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors" />
             </div>
@@ -703,8 +732,45 @@
             </div>
           </div>
 
+          <!-- Notify me: reminder before the task starts -->
+          <div>
+            <label class="block text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5">
+              <span class="material-symbols-outlined text-[14px] align-[-2px]">notifications</span>
+              {{ langService.translations().notifyMe }}
+            </label>
+            <div class="grid grid-cols-4 gap-1.5" role="radiogroup" [attr.aria-label]="langService.translations().notifyMe">
+              @for (minutes of reminderOptions; track minutes) {
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="editReminder() === minutes"
+                  (click)="editReminder.set(minutes)"
+                  class="py-1.5 rounded-lg border text-label-md font-medium transition-colors cursor-pointer"
+                  [class.bg-primary]="editReminder() === minutes"
+                  [class.text-on-primary]="editReminder() === minutes"
+                  [class.border-primary]="editReminder() === minutes"
+                  [class.border-outline-variant]="editReminder() !== minutes"
+                  [class.text-on-surface-variant]="editReminder() !== minutes">
+                  {{ langService.t('minutesShort', { minutes: minutes }) }}
+                </button>
+              }
+            </div>
+            <p class="mt-1 text-[11px] text-on-surface-variant">{{ langService.t('minutesBefore', { minutes: editReminder() }) }}</p>
+          </div>
+
           <!-- Footer Actions -->
           <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">
+            <button
+              type="button"
+              (click)="requestDelete(task)"
+              class="me-auto px-3 py-2 rounded-lg text-label-md font-medium flex items-center gap-1 transition-colors cursor-pointer"
+              [class.text-error]="!deleteArmed()"
+              [class.hover:bg-error-container]="!deleteArmed()"
+              [class.bg-error]="deleteArmed()"
+              [class.text-on-error]="deleteArmed()">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+              <span>{{ deleteArmed() ? langService.translations().deleteConfirm : langService.translations().deleteTask }}</span>
+            </button>
             <button
               type="button"
               (click)="editingTask.set(null)"
@@ -719,6 +785,83 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  }
+
+  <!-- Task actions sheet: move to a later day / delete -->
+  @if (movingTask(); as task) {
+    <div
+      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-on-surface/40 backdrop-blur-[2px]"
+      (click)="movingTask.set(null)">
+      <div
+        class="bg-surface-container-lowest w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl border border-outline-variant/50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-4"
+        role="dialog"
+        [attr.aria-label]="langService.translations().taskActions"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-body-md font-semibold text-on-surface truncate">{{ task.title }}</p>
+            <p class="text-label-sm text-on-surface-variant">
+              {{ shortDateLabel(task.dueDate) }} · {{ task.scheduledStart }} - {{ task.scheduledEnd }}
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="movingTask.set(null)"
+            class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <div>
+          <p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[15px]">event_upcoming</span>
+            {{ langService.translations().moveTask }}
+          </p>
+          <div class="grid gap-2" [class.grid-cols-2]="moveQuickOptions().length === 2" [class.grid-cols-3]="moveQuickOptions().length === 3">
+            @for (option of moveQuickOptions(); track option.date) {
+              <button
+                type="button"
+                (click)="confirmMove(option.date)"
+                class="p-2 rounded-xl border border-outline-variant hover:border-primary hover:bg-surface-container-low text-start cursor-pointer active:scale-95 transition">
+                <span class="block text-label-md font-semibold text-on-surface">{{ option.label }}</span>
+                <span class="block text-[11px] text-on-surface-variant">{{ shortDateLabel(option.date) }}</span>
+              </button>
+            }
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <label for="move-task-date" class="text-label-sm text-on-surface-variant shrink-0">{{ langService.translations().movePickDay }}</label>
+            <input
+              #moveDateInput
+              id="move-task-date"
+              type="date"
+              [min]="moveMinDate()"
+              [value]="moveDate()"
+              (input)="moveDate.set(moveDateInput.value)"
+              (click)="openDatePicker(moveDateInput)"
+              class="flex-1 min-w-0 px-3 py-1.5 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface text-body-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer" />
+            <button
+              type="button"
+              [disabled]="!moveDate() || moveDate() < moveMinDate()"
+              (click)="confirmMove(moveDate())"
+              class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-md font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+              {{ langService.translations().moveButton }}
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="requestDelete(task)"
+          class="w-full py-2 rounded-xl text-label-md font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border"
+          [class.border-error]="true"
+          [class.text-error]="!deleteArmed()"
+          [class.bg-error]="deleteArmed()"
+          [class.text-on-error]="deleteArmed()">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+          {{ deleteArmed() ? langService.translations().deleteConfirm : langService.translations().deleteTask }}
+        </button>
       </div>
     </div>
   }

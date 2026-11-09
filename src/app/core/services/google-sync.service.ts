@@ -79,6 +79,15 @@ export class GoogleSyncService {
       }
     }, { allowSignalWrites: true });
 
+    // Remove deleted tasks from Google, then delete them for good.
+    effect(() => {
+      const hasAccess = this.auth.hasGoogleAccess();
+      const deleted = this.taskService.deletedTasks();
+      if (hasAccess && deleted.length > 0) {
+        untracked(() => void this.removeDeleted(deleted));
+      }
+    }, { allowSignalWrites: true });
+
     // Reload the day's calendar events when the date, account or access changes.
     effect(() => {
       const date = this.taskService.selectedDate();
@@ -136,11 +145,42 @@ export class GoogleSyncService {
     }
   }
 
+  private async removeDeleted(tasks: TaskItem[]): Promise<void> {
+    for (const task of tasks) {
+      const key = `delete:${task.id}`;
+      if (this.inFlight.has(key) || !this.auth.hasGoogleAccess()) continue;
+      this.inFlight.add(key);
+      try {
+        await this.deleteGoogleCopy(task);
+        await this.taskService.purgeTask(task.id);
+      } catch (err) {
+        this.reportSyncError(err);
+      } finally {
+        this.inFlight.delete(key);
+      }
+    }
+  }
+
+  /** Deletes a task's Google Calendar event / Google Task; already-gone copies are fine. */
+  private async deleteGoogleCopy(task: Pick<TaskItem, 'googleEventId' | 'googleTaskId'>): Promise<void> {
+    const ignoreGone = (e: unknown) => {
+      if (!isNotFound(e)) throw e;
+    };
+    if (task.googleEventId) await this.api.deleteEvent(task.googleEventId).catch(ignoreGone);
+    if (task.googleTaskId) await this.api.deleteTask(task.googleTaskId).catch(ignoreGone);
+  }
+
   private async syncTask(task: TaskItem): Promise<void> {
     const revision = task.revision ?? 0;
+    const stillExists = () => this.taskService.allTasks().some((t) => t.id === task.id);
 
     if (isTimed(task)) {
       const eventId = await this.upsertEvent(task);
+      if (!stillExists()) {
+        // Deleted in Flowday while we were creating it in Google: undo.
+        await this.deleteGoogleCopy({ googleEventId: eventId, googleTaskId: task.googleTaskId });
+        return;
+      }
       // A task that used to be untimed may still have a Google Task: remove it.
       if (task.googleTaskId) {
         await this.api.deleteTask(task.googleTaskId).catch((e) => !isNotFound(e) && console.warn(e));
@@ -151,6 +191,10 @@ export class GoogleSyncService {
       });
     } else {
       const googleTaskId = await this.upsertGoogleTask(task);
+      if (!stillExists()) {
+        await this.deleteGoogleCopy({ googleEventId: task.googleEventId, googleTaskId });
+        return;
+      }
       if (task.googleEventId) {
         await this.api.deleteEvent(task.googleEventId).catch((e) => !isNotFound(e) && console.warn(e));
       }
@@ -175,6 +219,10 @@ export class GoogleSyncService {
       start: { dateTime: localDateTime(task.dueDate, start), timeZone },
       end: { dateTime: localDateTime(task.dueDate, end), timeZone },
       extendedProperties: { private: { flowdayTaskId: task.id } },
+      // "Notify me": Google Calendar alerts the phone even when Flowday is closed.
+      ...(task.reminderMinutes
+        ? { reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: task.reminderMinutes }] } }
+        : {}),
       ...(done ? { colorId: COMPLETED_COLOR_ID } : {})
     };
 

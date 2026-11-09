@@ -14,6 +14,7 @@ import { ApiService } from './core/services/api.service';
 import { LanguageService } from './core/services/language.service';
 import { GoogleSyncService } from './core/services/google-sync.service';
 import { AppInstallService } from './core/services/app-install.service';
+import { ReminderService } from './core/services/reminder.service';
 
 @Component({
   selector: 'app-root',
@@ -40,6 +41,8 @@ export class AppComponent implements OnInit {
   readonly appInstall = inject(AppInstallService);
   // Created at startup so Google sync runs on every screen, not only the dashboard.
   private readonly googleSync = inject(GoogleSyncService);
+  // Task reminders ("Notify me") run app-wide too.
+  private readonly reminders = inject(ReminderService);
 
   readonly currentView = signal<'dashboard' | 'planner'>('dashboard');
   readonly isGoogleModalOpen = signal<boolean>(false);

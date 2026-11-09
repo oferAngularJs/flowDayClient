@@ -35,7 +35,8 @@ const STORED_FIELDS: (keyof StoredTask)[] = [
   'category',
   'completedSubtasks',
   'totalSubtasks',
-  'dueDate'
+  'dueDate',
+  'reminderMinutes'
 ];
 
 /** Old browser-only task cache from before Firestore; removed on startup. */
@@ -68,6 +69,8 @@ function fromSnapshot(snap: QueryDocumentSnapshot<DocumentData>, today: string):
     totalSubtasks: data.totalSubtasks ?? 0,
     dueDate: data.dueDate ?? today,
     isOverdue: data.status !== 'DONE' && !!data.dueDate && data.dueDate < today,
+    reminderMinutes: typeof data.reminderMinutes === 'number' ? data.reminderMinutes : undefined,
+    deleted: data.deleted === true,
     revision: data.revision ?? 0,
     googleSyncedRevision: data.googleSyncedRevision ?? 0,
     googleEventId: data.googleEventId,
@@ -119,6 +122,8 @@ export class TaskService {
 
   /** All of the signed-in user's tasks, kept live from Firestore. */
   readonly allTasks = signal<TaskItem[]>([]);
+  /** Deleted tasks whose Google Calendar/Tasks copy still has to be removed (see GoogleSyncService). */
+  readonly deletedTasks = signal<TaskItem[]>([]);
   readonly isLoading = signal<boolean>(false);
   readonly sortAscending = signal<boolean>(true);
   /** Day shown on the dashboard (YYYY-MM-DD, local time). */
@@ -185,6 +190,7 @@ export class TaskService {
     this.unsubscribe = null;
     this.listeningUid = uid;
     this.allTasks.set([]);
+    this.deletedTasks.set([]);
 
     if (!uid) {
       this.isLoading.set(false);
@@ -198,7 +204,8 @@ export class TaskService {
         const today = localDateKey();
         const tasks = snapshot.docs.map((d) => fromSnapshot(d, today));
         this.zone.run(() => {
-          this.allTasks.set(tasks);
+          this.allTasks.set(tasks.filter((t) => !t.deleted));
+          this.deletedTasks.set(tasks.filter((t) => t.deleted));
           this.isLoading.set(false);
         });
       },
@@ -257,7 +264,8 @@ export class TaskService {
       category: payload.category,
       completedSubtasks: 0,
       totalSubtasks: 0,
-      dueDate: payload.dueDate || localDateKey()
+      dueDate: payload.dueDate || localDateKey(),
+      reminderMinutes: payload.reminderMinutes
     };
 
     setDoc(ref, {
@@ -282,10 +290,45 @@ export class TaskService {
     this.toast.show(this.lang.t('toastTaskUpdated', { title: changes.title ?? target.title }));
   }
 
+  /** Moves a task to a later day, keeping its hours. Never moves into the past. */
+  moveTask(taskId: string, newDate: string): void {
+    const col = this.tasksCollection();
+    const target = this.allTasks().find((t) => t.id === taskId);
+    if (!col || !target || !newDate || newDate === target.dueDate || newDate < localDateKey()) return;
+
+    updateDoc(doc(col, taskId), { dueDate: newDate, revision: increment(1), updatedAt: serverTimestamp() }).catch((e) =>
+      this.reportSaveError(e)
+    );
+    const locale = this.lang.isHebrew() ? 'he-IL' : 'en-US';
+    const dateLabel = new Date(`${newDate}T00:00:00`).toLocaleDateString(locale, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    this.toast.show(this.lang.t('toastTaskMoved', { title: target.title, date: dateLabel }));
+  }
+
+  /**
+   * Deletes a task. If it has a copy in Google Calendar/Tasks it's only marked deleted here;
+   * GoogleSyncService removes the Google copy and then deletes the task for good.
+   */
   deleteTask(taskId: string): void {
     const col = this.tasksCollection();
-    if (!col) return;
-    deleteDoc(doc(col, taskId)).catch((e) => this.reportSaveError(e));
+    const target = this.allTasks().find((t) => t.id === taskId);
+    if (!col || !target) return;
+
+    const write =
+      target.googleEventId || target.googleTaskId
+        ? updateDoc(doc(col, taskId), { deleted: true, updatedAt: serverTimestamp() })
+        : deleteDoc(doc(col, taskId));
+    write.catch((e) => this.reportSaveError(e));
+    this.toast.show(this.lang.t('toastTaskDeleted', { title: target.title }));
+  }
+
+  /** Final removal after the Google copy is gone (or never existed). */
+  purgeTask(taskId: string): Promise<void> {
+    const col = this.tasksCollection();
+    return col ? deleteDoc(doc(col, taskId)) : Promise.resolve();
   }
 
   /**

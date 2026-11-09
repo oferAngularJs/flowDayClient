@@ -21,3 +21,10 @@ export function formatDuration(mins: number): string {
   const m = mins % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
+
+/** The YYYY-MM-DD key `days` days after `dateKey` (local time). */
+export function addDaysToKey(dateKey: string, days: number): string {
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return localDateKey(date);
+}

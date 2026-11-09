@@ -7,7 +7,8 @@ import { LanguageService } from '../../core/services/language.service';
 import { BentoStatsComponent } from './components/bento-stats/bento-stats.component';
 import { FocusTaskListComponent } from './components/focus-task-list/focus-task-list.component';
 import { TaskItem, TaskPriority } from '../../core/models/task.model';
-import { localDateKey } from '../../core/utils/date';
+import { addDaysToKey, localDateKey } from '../../core/utils/date';
+import { DEFAULT_REMINDER_MINUTES, REMINDER_OPTIONS, ReminderService } from '../../core/services/reminder.service';
 
 export interface TaskCategoryOption {
   key: string;
@@ -38,6 +39,7 @@ export class DashboardComponent {
   readonly authService = inject(GoogleAuthService);
   readonly syncService = inject(GoogleSyncService);
   readonly langService = inject(LanguageService);
+  private readonly reminders = inject(ReminderService);
   readonly navigateToPlanner = output<void>();
   readonly requestSignIn = output<void>();
 
@@ -111,6 +113,79 @@ export class DashboardComponent {
   });
 
   readonly highlightedTaskId = signal<string | null>(null);
+
+  // "Notify me" reminder (minutes before start)
+  readonly reminderOptions = REMINDER_OPTIONS;
+  readonly newTaskReminder = signal<number>(DEFAULT_REMINDER_MINUTES);
+  readonly editReminder = signal<number>(DEFAULT_REMINDER_MINUTES);
+
+  /** Tasks can't be scheduled or moved into the past. */
+  readonly todayKey = signal<string>(localDateKey());
+
+  // Move-to-another-day sheet
+  readonly movingTask = signal<TaskItem | null>(null);
+  readonly moveDate = signal<string>('');
+  /** Earliest day a task may move to: the day after its current day, and never before today. */
+  readonly moveMinDate = computed(() => {
+    const task = this.movingTask();
+    if (!task) return this.todayKey();
+    const next = addDaysToKey(task.dueDate, 1);
+    return next > this.todayKey() ? next : this.todayKey();
+  });
+  readonly moveQuickOptions = computed(() => {
+    const task = this.movingTask();
+    if (!task) return [];
+    const t = this.langService.translations();
+    const base = task.dueDate > this.todayKey() ? task.dueDate : this.todayKey();
+    const options: { label: string; date: string }[] = [];
+    if (task.dueDate < this.todayKey()) options.push({ label: t.moveToday, date: this.todayKey() });
+    options.push({ label: t.moveNextDay, date: addDaysToKey(base, 1) });
+    options.push({ label: t.moveNextWeek, date: addDaysToKey(base, 7) });
+    return options;
+  });
+
+  /** Delete needs a second tap within a few seconds. */
+  readonly deleteArmed = signal<boolean>(false);
+  private deleteArmTimer: ReturnType<typeof setTimeout> | null = null;
+
+  shortDateLabel(dateKey: string): string {
+    const locale = this.langService.isHebrew() ? 'he-IL' : 'en-US';
+    return new Date(dateKey + 'T00:00:00').toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  openMoveTask(task: TaskItem): void {
+    this.todayKey.set(localDateKey());
+    this.movingTask.set(task);
+    this.moveDate.set('');
+    this.disarmDelete();
+  }
+
+  confirmMove(date: string): void {
+    const task = this.movingTask();
+    if (!task || !date || date < this.moveMinDate()) return;
+    this.taskService.moveTask(task.id, date);
+    this.movingTask.set(null);
+  }
+
+  /** First tap arms the button, second tap deletes. */
+  requestDelete(task: TaskItem): void {
+    if (!this.deleteArmed()) {
+      this.deleteArmed.set(true);
+      if (this.deleteArmTimer) clearTimeout(this.deleteArmTimer);
+      this.deleteArmTimer = setTimeout(() => this.deleteArmed.set(false), 4000);
+      return;
+    }
+    this.disarmDelete();
+    this.taskService.deleteTask(task.id);
+    this.movingTask.set(null);
+    this.editingTask.set(null);
+  }
+
+  private disarmDelete(): void {
+    if (this.deleteArmTimer) clearTimeout(this.deleteArmTimer);
+    this.deleteArmTimer = null;
+    this.deleteArmed.set(false);
+  }
 
   // Edit Task State
   readonly editingTask = signal<TaskItem | null>(null);
@@ -319,6 +394,9 @@ export class DashboardComponent {
     this.editCategory.set(task.category || 'Personal');
     this.editPriority.set(task.priority || 'MEDIUM');
     this.editDate.set(task.dueDate || localDateKey());
+    this.editReminder.set(task.reminderMinutes ?? DEFAULT_REMINDER_MINUTES);
+    this.todayKey.set(localDateKey());
+    this.disarmDelete();
     this.isEditTaskCategoryDropdownOpen.set(false);
 
     const start = this.parseTimeString(task.scheduledStart);
@@ -345,7 +423,9 @@ export class DashboardComponent {
       title,
       priority: this.editPriority(),
       category: this.editCategory(),
-      dueDate: this.editDate(),
+      // Only today or later; an old (overdue) date may stay as it is.
+      dueDate: this.editDate() >= this.todayKey() || this.editDate() === task.dueDate ? this.editDate() : task.dueDate,
+      reminderMinutes: this.editReminder(),
       scheduledStart,
       scheduledEnd,
       durationMinutes
@@ -353,6 +433,7 @@ export class DashboardComponent {
 
     this.isEditTaskCategoryDropdownOpen.set(false);
     this.editingTask.set(null);
+    void this.reminders.requestPermission();
   }
 
   onSmartReschedule(): void {
@@ -374,7 +455,9 @@ export class DashboardComponent {
     this.newTaskTitle.set('');
     this.newTaskPriority.set('MEDIUM');
     this.newTaskCategory.set('Personal');
-    this.newTaskDate.set(this.selectedDate());
+    this.todayKey.set(localDateKey());
+    this.newTaskDate.set(this.selectedDate() < this.todayKey() ? this.todayKey() : this.selectedDate());
+    this.newTaskReminder.set(DEFAULT_REMINDER_MINUTES);
     this.isNewTaskCategoryDropdownOpen.set(false);
     this.showNewTaskModal.set(true);
   }
@@ -394,8 +477,10 @@ export class DashboardComponent {
       scheduledEnd,
       durationMinutes: duration,
       category: this.newTaskCategory(),
-      dueDate: this.newTaskDate()
+      dueDate: this.newTaskDate() < this.todayKey() ? this.todayKey() : this.newTaskDate(),
+      reminderMinutes: this.newTaskReminder()
     });
+    void this.reminders.requestPermission();
 
     if (createdTask?.id) {
       this.highlightedTaskId.set(createdTask.id);
