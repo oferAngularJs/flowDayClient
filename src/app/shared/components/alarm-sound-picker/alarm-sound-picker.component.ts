@@ -19,21 +19,17 @@ const CHOOSE_SONG = '__choose-song';
         {{ t().alarmSound }}
       </label>
       <div class="flex items-center gap-2">
-        <div class="relative flex-1 min-w-0">
-          <select
-            #soundSelect
-            id="alarm-sound-select"
-            [value]="sound.soundId()"
-            (change)="onSelect(soundSelect, fileInput)"
-            class="w-full appearance-none ps-3 pe-9 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors">
-            @for (option of options(); track option.value) {
-              <option [value]="option.value" [selected]="option.value === sound.soundId()">{{ option.label }}</option>
-            }
-          </select>
-          <span class="material-symbols-outlined pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant">
-            expand_more
-          </span>
-        </div>
+        <!-- Plain native dropdown (its own arrow only), like the time pickers above. -->
+        <select
+          #soundSelect
+          id="alarm-sound-select"
+          [value]="sound.soundId()"
+          (change)="onSelect(soundSelect, fileInput)"
+          class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors">
+          @for (option of options(); track option.value) {
+            <option [value]="option.value" [selected]="option.value === sound.soundId()">{{ option.label }}</option>
+          }
+        </select>
         <button
           type="button"
           [disabled]="sound.soundId() === 'none'"
