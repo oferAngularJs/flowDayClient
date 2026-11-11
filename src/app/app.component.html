@@ -9,7 +9,8 @@
     (toggleView)="toggleView()"
     (openGoogleModal)="isGoogleModalOpen.set(true)"
     (disconnectGoogle)="authService.disconnectGoogleAccount()"
-    (openServerLogModal)="isServerLogOpen.set(true)" />
+    (openServerLogModal)="isServerLogOpen.set(true)"
+    (openTask)="showTask($event)" />
 
   <app-toast />
   <app-install-banner />

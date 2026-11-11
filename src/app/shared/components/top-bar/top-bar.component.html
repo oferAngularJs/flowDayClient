@@ -139,14 +139,105 @@
         }
       </div>
 
-      <button
-        aria-label="Notifications"
-        type="button"
-        (click)="openServerLogModal.emit()"
-        class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-container dark:hover:bg-surface-variant transition-colors duration-150 active:scale-95 text-on-surface-variant relative">
-        <span class="material-symbols-outlined text-[20px]">notifications</span>
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-surface"></span>
-      </button>
+      <!-- Bell: what's still to do -->
+      <div class="relative">
+        <button
+          type="button"
+          (click)="toggleUpNext()"
+          [attr.aria-label]="langService.translations().upNextAria"
+          [attr.aria-expanded]="isUpNextOpen()"
+          [title]="langService.translations().upNextAria"
+          class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-container dark:hover:bg-surface-variant transition-colors duration-150 active:scale-95 text-on-surface-variant relative cursor-pointer"
+          [class.bg-surface-container]="isUpNextOpen()">
+          <span class="material-symbols-outlined text-[20px]">notifications</span>
+          @if (bellCount() > 0) {
+            <span
+              class="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-error text-on-error text-[10px] font-bold leading-4 text-center ring-2 ring-surface">
+              {{ bellCount() > 9 ? '9+' : bellCount() }}
+            </span>
+          }
+        </button>
+
+        @if (isUpNextOpen()) {
+          <!-- Tap outside to close -->
+          <div class="fixed inset-0 z-40" (click)="isUpNextOpen.set(false)"></div>
+          <div
+            class="absolute end-0 mt-2 z-50 w-80 max-w-[calc(100vw-1.5rem)] max-h-[70dvh] overflow-y-auto bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant/40"
+            role="dialog"
+            [attr.aria-label]="langService.translations().upNextAria">
+            <div class="px-3.5 pt-3 pb-2 border-b border-outline-variant/30 flex items-start justify-between gap-2">
+              <div>
+                <p class="text-body-md font-semibold text-on-surface flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[18px] text-primary">event_upcoming</span>
+                  {{ langService.translations().upNextTitle }}
+                </p>
+                @if (isConnected() && openTaskCount() > 0) {
+                  <p class="text-[11px] text-on-surface-variant">{{ upNextSubtitle() }}</p>
+                }
+              </div>
+              <button
+                type="button"
+                (click)="isUpNextOpen.set(false)"
+                class="w-6 h-6 rounded-full flex items-center justify-center hover:bg-surface-container text-on-surface-variant cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+
+            @if (!isConnected()) {
+              <p class="p-4 text-body-sm text-on-surface-variant text-center">{{ langService.translations().upNextSignedOut }}</p>
+            } @else if (upNextGroups().length === 0) {
+              <div class="p-5 text-center space-y-1">
+                <span class="material-symbols-outlined text-[30px] text-primary">task_alt</span>
+                <p class="text-body-md font-semibold text-on-surface">{{ langService.translations().upNextAllDone }}</p>
+                <p class="text-body-sm text-on-surface-variant">{{ langService.translations().upNextAllDoneBody }}</p>
+              </div>
+            } @else {
+              <div class="p-2 space-y-2">
+                @for (group of upNextGroups(); track group.key) {
+                  <div>
+                    <p
+                      class="px-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider"
+                      [class.text-error]="group.key === 'overdue'"
+                      [class.text-on-surface-variant]="group.key !== 'overdue'">
+                      {{ group.label }}
+                    </p>
+                    @for (task of group.tasks; track task.id) {
+                      <button
+                        type="button"
+                        (click)="onOpenTask(task)"
+                        class="w-full flex items-center gap-2.5 px-1.5 py-2 rounded-xl hover:bg-surface-container-low text-start cursor-pointer">
+                        <span
+                          class="w-1 self-stretch rounded-full shrink-0"
+                          [class.bg-error]="group.key === 'overdue'"
+                          [class.bg-primary]="group.key === 'today'"
+                          [class.bg-outline-variant]="group.key === 'coming'"></span>
+                        <span class="flex-1 min-w-0">
+                          <span class="block text-body-sm font-medium text-on-surface truncate">{{ task.title }}</span>
+                          <span class="flex items-center gap-1 text-[11px] text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[13px]">schedule</span>
+                            {{ task.whenLabel }}
+                            @if (task.reminderMinutes) {
+                              <span class="material-symbols-outlined text-[13px] ms-1">notifications</span>
+                            }
+                          </span>
+                        </span>
+                        @if (task.isNow) {
+                          <span class="shrink-0 px-1.5 py-0.5 rounded-full bg-primary text-on-primary text-[10px] font-bold">
+                            {{ langService.translations().upNextNow }}
+                          </span>
+                        }
+                      </button>
+                    }
+                  </div>
+                }
+                @if (hiddenCount() > 0) {
+                  <p class="px-1.5 pb-1 text-[11px] text-on-surface-variant">{{ langService.t('upNextMore', { count: hiddenCount() }) }}</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
     </div>
   </div>
 </header>

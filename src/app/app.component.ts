@@ -16,6 +16,8 @@ import { LanguageService } from './core/services/language.service';
 import { GoogleSyncService } from './core/services/google-sync.service';
 import { AppInstallService } from './core/services/app-install.service';
 import { ReminderService } from './core/services/reminder.service';
+import { TaskItem } from './core/models/task.model';
+import { localDateKey } from './core/utils/date';
 
 @Component({
   selector: 'app-root',
@@ -74,6 +76,21 @@ export class AppComponent implements OnInit {
     } else if (tab === 'analytics') {
       this.toastService.show(this.langService.translations().toastAnalyticsView, 'GET /api/v1/analytics/velocity');
     }
+  }
+
+  /** From the bell popup: open the task's day on the dashboard and point at the task. */
+  showTask(task: TaskItem): void {
+    const today = localDateKey();
+    // Overdue tasks are listed on today's page.
+    this.taskService.selectedDate.set(task.dueDate < today ? today : task.dueDate);
+    this.currentView.set('dashboard');
+    setTimeout(() => {
+      const card = document.getElementById('task-card-' + task.id);
+      if (!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('ring-2', 'ring-primary');
+      setTimeout(() => card.classList.remove('ring-2', 'ring-primary'), 2500);
+    }, 150);
   }
 
   async onAuthorizeGoogle(): Promise<void> {

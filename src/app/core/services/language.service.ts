@@ -206,6 +206,20 @@ export interface TranslationDictionary {
   alarmMore: string;
   soundNone: string;
   chooseSongOption: string;
+  upNextTitle: string;
+  upNextSubtitle: string;
+  upNextOneLeft: string;
+  upNextOverdue: string;
+  upNextToday: string;
+  upNextNow: string;
+  upNextComingUp: string;
+  upNextTomorrow: string;
+  upNextNoTime: string;
+  upNextMore: string;
+  upNextAllDone: string;
+  upNextAllDoneBody: string;
+  upNextSignedOut: string;
+  upNextAria: string;
   toastAnalyticsView: string;
 }
 
@@ -400,6 +414,20 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   alarmMore: '+{count} more',
   soundNone: 'None (silent)',
   chooseSongOption: 'Choose a song…',
+  upNextTitle: 'Up next',
+  upNextSubtitle: '{count} tasks still to do',
+  upNextOneLeft: '1 task still to do',
+  upNextOverdue: 'Overdue',
+  upNextToday: 'Today',
+  upNextNow: 'Happening now',
+  upNextComingUp: 'Coming up',
+  upNextTomorrow: 'Tomorrow',
+  upNextNoTime: 'Any time',
+  upNextMore: '+{count} more on the dashboard',
+  upNextAllDone: 'You are all caught up!',
+  upNextAllDoneBody: 'No open tasks right now. Enjoy the free time.',
+  upNextSignedOut: 'Sign in to see your upcoming tasks.',
+  upNextAria: 'Upcoming tasks',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -594,6 +622,20 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   alarmMore: '+{count} נוספות',
   soundNone: 'ללא (שקט)',
   chooseSongOption: 'בחר שיר…',
+  upNextTitle: 'הבא בתור',
+  upNextSubtitle: 'עוד {count} משימות לביצוע',
+  upNextOneLeft: 'עוד משימה אחת לביצוע',
+  upNextOverdue: 'באיחור',
+  upNextToday: 'היום',
+  upNextNow: 'מתרחש עכשיו',
+  upNextComingUp: 'בימים הקרובים',
+  upNextTomorrow: 'מחר',
+  upNextNoTime: 'בכל שעה',
+  upNextMore: '+{count} נוספות בלוח הבקרה',
+  upNextAllDone: 'הכול מעודכן!',
+  upNextAllDoneBody: 'אין כרגע משימות פתוחות. תיהנה מהזמן הפנוי.',
+  upNextSignedOut: 'התחבר כדי לראות את המשימות הקרובות שלך.',
+  upNextAria: 'משימות קרובות',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 
