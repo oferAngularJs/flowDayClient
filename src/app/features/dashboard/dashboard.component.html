@@ -450,6 +450,8 @@
             <p class="mt-1 text-[11px] text-on-surface-variant">{{ langService.t('minutesBefore', { minutes: newTaskReminder() }) }}</p>
           </div>
 
+          <app-alarm-sound-picker />
+
           <!-- Footer Actions -->
           <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">
             <button
@@ -757,6 +759,8 @@
             </div>
             <p class="mt-1 text-[11px] text-on-surface-variant">{{ langService.t('minutesBefore', { minutes: editReminder() }) }}</p>
           </div>
+
+          <app-alarm-sound-picker />
 
           <!-- Footer Actions -->
           <div class="pt-3 border-t border-outline-variant/20 flex items-center justify-end gap-2 shrink-0">

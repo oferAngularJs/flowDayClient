@@ -188,6 +188,22 @@ export interface TranslationDictionary {
   minutesShort: string;
   reminderStartsIn: string;
   notificationsBlocked: string;
+  alarmSound: string;
+  soundChime: string;
+  soundBell: string;
+  soundDigital: string;
+  soundMySong: string;
+  chooseSong: string;
+  changeSong: string;
+  playSound: string;
+  stopSound: string;
+  songSaved: string;
+  songTooLarge: string;
+  songUnplayable: string;
+  songDeviceOnly: string;
+  alarmStop: string;
+  alarmOpenTask: string;
+  alarmMore: string;
   toastAnalyticsView: string;
 }
 
@@ -364,6 +380,22 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   minutesShort: '{minutes}m',
   reminderStartsIn: 'Starts in {minutes} min',
   notificationsBlocked: 'Notifications are blocked. Allow them in your browser settings to get reminders.',
+  alarmSound: 'Alarm sound',
+  soundChime: 'Chime',
+  soundBell: 'Bell',
+  soundDigital: 'Digital',
+  soundMySong: 'My song',
+  chooseSong: 'Choose a song',
+  changeSong: 'Change song',
+  playSound: 'Play',
+  stopSound: 'Stop',
+  songSaved: '"{name}" will play when a reminder rings.',
+  songTooLarge: 'This file is too large (max 15 MB).',
+  songUnplayable: 'This file can not be played. Try an MP3 or M4A file.',
+  songDeviceOnly: 'Saved on this device only.',
+  alarmStop: 'Stop',
+  alarmOpenTask: 'Starts at {time}',
+  alarmMore: '+{count} more',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -540,6 +572,22 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   minutesShort: '{minutes} דק׳',
   reminderStartsIn: 'מתחילה בעוד {minutes} דקות',
   notificationsBlocked: 'ההתראות חסומות. אפשר אותן בהגדרות הדפדפן כדי לקבל תזכורות.',
+  alarmSound: 'צליל התראה',
+  soundChime: 'צלצול',
+  soundBell: 'פעמון',
+  soundDigital: 'דיגיטלי',
+  soundMySong: 'השיר שלי',
+  chooseSong: 'בחר שיר',
+  changeSong: 'החלף שיר',
+  playSound: 'נגן',
+  stopSound: 'עצור',
+  songSaved: 'השיר "{name}" יתנגן כשתזכורת מצלצלת.',
+  songTooLarge: 'הקובץ גדול מדי (עד 15MB).',
+  songUnplayable: 'לא ניתן לנגן את הקובץ. נסה קובץ MP3 או M4A.',
+  songDeviceOnly: 'נשמר במכשיר הזה בלבד.',
+  alarmStop: 'עצור',
+  alarmOpenTask: 'מתחילה ב-{time}',
+  alarmMore: '+{count} נוספות',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 

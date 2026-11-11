@@ -6,6 +6,7 @@ import { GoogleSyncService } from '../../core/services/google-sync.service';
 import { LanguageService } from '../../core/services/language.service';
 import { BentoStatsComponent } from './components/bento-stats/bento-stats.component';
 import { FocusTaskListComponent } from './components/focus-task-list/focus-task-list.component';
+import { AlarmSoundPickerComponent } from '../../shared/components/alarm-sound-picker/alarm-sound-picker.component';
 import { TaskItem, TaskPriority } from '../../core/models/task.model';
 import { addDaysToKey, localDateKey } from '../../core/utils/date';
 import { DEFAULT_REMINDER_MINUTES, REMINDER_OPTIONS, ReminderService } from '../../core/services/reminder.service';
@@ -30,7 +31,7 @@ export const TASK_CATEGORIES: TaskCategoryOption[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [BentoStatsComponent, FocusTaskListComponent, FormsModule],
+  imports: [BentoStatsComponent, FocusTaskListComponent, FormsModule, AlarmSoundPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.component.html'
 })

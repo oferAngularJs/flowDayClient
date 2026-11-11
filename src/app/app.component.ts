@@ -4,6 +4,7 @@ import { BottomNavComponent, NavTab } from './shared/components/bottom-nav/botto
 import { GoogleOauthModalComponent } from './shared/components/google-oauth-modal/google-oauth-modal.component';
 import { ToastComponent } from './shared/components/toast/toast.component';
 import { InstallBannerComponent } from './shared/components/install-banner/install-banner.component';
+import { AlarmOverlayComponent } from './shared/components/alarm-overlay/alarm-overlay.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { PlannerComponent } from './features/planner/planner.component';
 import { TaskService } from './core/services/task.service';
@@ -25,6 +26,7 @@ import { ReminderService } from './core/services/reminder.service';
     GoogleOauthModalComponent,
     ToastComponent,
     InstallBannerComponent,
+    AlarmOverlayComponent,
     DashboardComponent,
     PlannerComponent
   ],
