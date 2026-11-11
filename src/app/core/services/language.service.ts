@@ -204,6 +204,8 @@ export interface TranslationDictionary {
   alarmStop: string;
   alarmOpenTask: string;
   alarmMore: string;
+  soundNone: string;
+  chooseSongOption: string;
   toastAnalyticsView: string;
 }
 
@@ -396,6 +398,8 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   alarmStop: 'Stop',
   alarmOpenTask: 'Starts at {time}',
   alarmMore: '+{count} more',
+  soundNone: 'None (silent)',
+  chooseSongOption: 'Choose a song…',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -588,6 +592,8 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   alarmStop: 'עצור',
   alarmOpenTask: 'מתחילה ב-{time}',
   alarmMore: '+{count} נוספות',
+  soundNone: 'ללא (שקט)',
+  chooseSongOption: 'בחר שיר…',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 

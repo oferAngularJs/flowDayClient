@@ -1,7 +1,8 @@
 import { Injectable, NgZone, inject, signal } from '@angular/core';
 
-export type AlarmSoundId = 'chime' | 'bell' | 'digital' | 'custom';
-export const BUILT_IN_SOUNDS: Exclude<AlarmSoundId, 'custom'>[] = ['chime', 'bell', 'digital'];
+export type AlarmSoundId = 'none' | 'chime' | 'bell' | 'digital' | 'custom';
+export type ToneId = Exclude<AlarmSoundId, 'none' | 'custom'>;
+export const BUILT_IN_SOUNDS: ToneId[] = ['chime', 'bell', 'digital'];
 /** Songs bigger than this are refused (they live in this device's storage). */
 export const MAX_SONG_BYTES = 15 * 1024 * 1024;
 
@@ -65,7 +66,7 @@ function tone(ctx: AudioContext, at: number, freq: number, length: number, type:
 }
 
 /** Schedules one cycle of a tone pattern; returns the cycle length in seconds. */
-function playCycle(ctx: AudioContext, id: Exclude<AlarmSoundId, 'custom'>, at: number): number {
+function playCycle(ctx: AudioContext, id: ToneId, at: number): number {
   switch (id) {
     case 'chime':
       tone(ctx, at, 659.25, 0.9, 'sine', 0.5); // E5
@@ -156,6 +157,7 @@ export class AlarmSoundService {
 
   /** Plays a sound from the picker so the user can hear it; tapping again stops it. */
   togglePreview(id: AlarmSoundId): void {
+    if (id === 'none') return;
     if (this.previewing() === id) {
       this.stop();
       return;
@@ -177,6 +179,7 @@ export class AlarmSoundService {
   }
 
   private play(id: AlarmSoundId): void {
+    if (id === 'none') return; // silent alarm: screen (and vibration) only
     if (id === 'custom' && this.songUrl) {
       this.audio.currentTime = 0;
       this.audio.play().catch((err) => {
@@ -188,7 +191,7 @@ export class AlarmSoundService {
     this.playTones(id === 'custom' ? 'chime' : id);
   }
 
-  private playTones(id: Exclude<AlarmSoundId, 'custom'>): void {
+  private playTones(id: ToneId): void {
     const ctx = this.getContext();
     if (!ctx) return;
     void ctx.resume();

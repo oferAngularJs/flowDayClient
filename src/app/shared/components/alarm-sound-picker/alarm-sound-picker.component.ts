@@ -1,62 +1,57 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { AlarmSoundId, AlarmSoundService, BUILT_IN_SOUNDS } from '../../../core/services/alarm-sound.service';
+import { AlarmSoundId, AlarmSoundService, BUILT_IN_SOUNDS, ToneId } from '../../../core/services/alarm-sound.service';
 import { LanguageService } from '../../../core/services/language.service';
 
-/** Picks the reminder sound: a built-in tone or the user's own song (saved on this device). */
+/** Value of the dropdown entry that opens the file picker instead of selecting a sound. */
+const CHOOSE_SONG = '__choose-song';
+
+/** Picks the reminder sound: none, a built-in tone, or the user's own song (saved on this device). */
 @Component({
   selector: 'app-alarm-sound-picker',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div>
-      <p class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 flex items-center gap-1">
+      <label
+        for="alarm-sound-select"
+        class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider mb-1.5 flex items-center gap-1">
         <span class="material-symbols-outlined text-[14px]">music_note</span>
         {{ t().alarmSound }}
-      </p>
-      <div class="space-y-1.5" role="radiogroup" [attr.aria-label]="t().alarmSound">
-        @for (option of options(); track option.id) {
-          <div
-            class="flex items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors"
-            [class.border-primary]="sound.soundId() === option.id"
-            [class.bg-primary-fixed]="sound.soundId() === option.id"
-            [class.border-outline-variant]="sound.soundId() !== option.id">
-            <button
-              type="button"
-              role="radio"
-              [attr.aria-checked]="sound.soundId() === option.id"
-              (click)="option.id === 'custom' && !sound.songName() ? fileInput.click() : sound.selectSound(option.id)"
-              class="flex-1 min-w-0 flex items-center gap-2 text-start cursor-pointer">
-              <span
-                class="w-4 h-4 shrink-0 rounded-full border-2 flex items-center justify-center"
-                [class.border-primary]="sound.soundId() === option.id"
-                [class.border-outline]="sound.soundId() !== option.id">
-                @if (sound.soundId() === option.id) {
-                  <span class="w-2 h-2 rounded-full bg-primary"></span>
-                }
-              </span>
-              <span class="material-symbols-outlined text-[18px] text-primary">{{ option.icon }}</span>
-              <span class="text-body-sm font-medium text-on-surface truncate">{{ option.label }}</span>
-            </button>
-            @if (option.id === 'custom') {
-              <button
-                type="button"
-                (click)="fileInput.click()"
-                class="shrink-0 px-2 py-1 rounded-lg text-[11px] font-semibold text-primary hover:bg-surface-container cursor-pointer">
-                {{ sound.songName() ? t().changeSong : t().chooseSong }}
-              </button>
+      </label>
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1 min-w-0">
+          <select
+            #soundSelect
+            id="alarm-sound-select"
+            [value]="sound.soundId()"
+            (change)="onSelect(soundSelect, fileInput)"
+            class="w-full appearance-none ps-3 pe-9 py-2 rounded-xl border border-outline-variant bg-surface-container-low hover:bg-surface-container text-on-surface text-body-md focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer transition-colors">
+            @for (option of options(); track option.value) {
+              <option [value]="option.value" [selected]="option.value === sound.soundId()">{{ option.label }}</option>
             }
-            @if (option.id !== 'custom' || sound.songName()) {
-              <button
-                type="button"
-                (click)="sound.togglePreview(option.id)"
-                [attr.aria-label]="sound.previewing() === option.id ? t().stopSound : t().playSound"
-                class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-primary hover:bg-surface-container cursor-pointer">
-                <span class="material-symbols-outlined text-[20px]">{{ sound.previewing() === option.id ? 'stop_circle' : 'play_circle' }}</span>
-              </button>
-            }
-          </div>
-        }
+          </select>
+          <span class="material-symbols-outlined pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant">
+            expand_more
+          </span>
+        </div>
+        <button
+          type="button"
+          [disabled]="sound.soundId() === 'none'"
+          (click)="sound.togglePreview(sound.soundId())"
+          [attr.aria-label]="sound.previewing() ? t().stopSound : t().playSound"
+          [title]="sound.previewing() ? t().stopSound : t().playSound"
+          class="shrink-0 w-10 h-10 rounded-xl border border-outline-variant flex items-center justify-center text-primary hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+          <span class="material-symbols-outlined text-[22px]">{{ sound.previewing() ? 'stop_circle' : 'play_circle' }}</span>
+        </button>
       </div>
+      @if (sound.soundId() === 'custom') {
+        <button
+          type="button"
+          (click)="fileInput.click()"
+          class="mt-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer">
+          {{ t().changeSong }}
+        </button>
+      }
       @if (message(); as msg) {
         <p class="mt-1 text-[11px]" [class.text-error]="msg.error" [class.text-on-surface-variant]="!msg.error">{{ msg.text }}</p>
       }
@@ -72,25 +67,27 @@ export class AlarmSoundPickerComponent implements OnDestroy {
 
   readonly options = computed(() => {
     const t = this.t();
-    const labels: Record<Exclude<AlarmSoundId, 'custom'>, string> = {
-      chime: t.soundChime,
-      bell: t.soundBell,
-      digital: t.soundDigital
-    };
-    const icons: Record<Exclude<AlarmSoundId, 'custom'>, string> = {
-      chime: 'notifications_active',
-      bell: 'notifications',
-      digital: 'alarm'
-    };
+    const labels: Record<ToneId, string> = { chime: t.soundChime, bell: t.soundBell, digital: t.soundDigital };
+    const song = this.sound.songName();
     return [
-      ...BUILT_IN_SOUNDS.map((id) => ({ id: id as AlarmSoundId, label: labels[id], icon: icons[id] })),
-      {
-        id: 'custom' as AlarmSoundId,
-        label: this.sound.songName() ? `${t.soundMySong}: ${this.sound.songName()}` : t.soundMySong,
-        icon: 'library_music'
-      }
+      { value: 'none', label: t.soundNone },
+      ...BUILT_IN_SOUNDS.map((id) => ({ value: id as string, label: labels[id] })),
+      ...(song ? [{ value: 'custom', label: `${t.soundMySong}: ${song}` }] : []),
+      { value: CHOOSE_SONG, label: t.chooseSongOption }
     ];
   });
+
+  onSelect(select: HTMLSelectElement, fileInput: HTMLInputElement): void {
+    this.sound.stop();
+    if (select.value === CHOOSE_SONG) {
+      // Keep showing the current sound until a file is actually chosen.
+      select.value = this.sound.soundId();
+      fileInput.click();
+      return;
+    }
+    this.message.set(null);
+    this.sound.selectSound(select.value as AlarmSoundId);
+  }
 
   async onFile(input: HTMLInputElement): Promise<void> {
     const file = input.files?.[0];
