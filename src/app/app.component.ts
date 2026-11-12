@@ -53,7 +53,6 @@ export class AppComponent implements OnInit {
   readonly isServerLogOpen = signal<boolean>(false);
 
   ngOnInit(): void {
-    this.plannerService.loadWeeklyPlan();
     this.authService.checkAuthStatus();
   }
 

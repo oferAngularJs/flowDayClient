@@ -220,6 +220,36 @@ export interface TranslationDictionary {
   upNextAllDoneBody: string;
   upNextSignedOut: string;
   upNextAria: string;
+  plannerGoalLabel: string;
+  plannerGoalPlaceholder: string;
+  plannerSettings: string;
+  plannerDayWindow: string;
+  plannerTo: string;
+  plannerMaxPerDay: string;
+  plannerGenerate: string;
+  plannerGenerating: string;
+  plannerGeneratingHint: string;
+  plannerRegenerate: string;
+  plannerDiscard: string;
+  plannerUsesCalendar: string;
+  plannerUsesTasksOnly: string;
+  plannerCapacityTitle: string;
+  plannerCapacityPlanned: string;
+  plannerLegendBusy: string;
+  plannerLegendNew: string;
+  plannerEmptyTitle: string;
+  plannerEmptyBody: string;
+  plannerSignIn: string;
+  plannerProposed: string;
+  plannerAccept: string;
+  plannerAccepted: string;
+  plannerNothingFits: string;
+  plannerErrorDailyLimit: string;
+  plannerErrorBusy: string;
+  plannerErrorNotReady: string;
+  plannerErrorGeneric: string;
+  plannerErrorOffline: string;
+  plannerPoweredBy: string;
   toastAnalyticsView: string;
 }
 
@@ -428,6 +458,36 @@ const EN_TRANSLATIONS: TranslationDictionary = {
   upNextAllDoneBody: 'No open tasks right now. Enjoy the free time.',
   upNextSignedOut: 'Sign in to see your upcoming tasks.',
   upNextAria: 'Upcoming tasks',
+  plannerGoalLabel: 'Your goal for the next 7 days',
+  plannerGoalPlaceholder: 'Get fit: 3 workouts and 2 healthy dinners this week',
+  plannerSettings: 'Planning settings',
+  plannerDayWindow: 'Plan between',
+  plannerTo: 'to',
+  plannerMaxPerDay: 'Max new work per day',
+  plannerGenerate: 'Plan my week',
+  plannerGenerating: 'Planning your week…',
+  plannerGeneratingHint: 'Claude is fitting your goal into your free time. This can take up to a minute.',
+  plannerRegenerate: 'Plan again',
+  plannerDiscard: 'Discard plan',
+  plannerUsesCalendar: 'Checks your tasks and Google Calendar',
+  plannerUsesTasksOnly: 'Checks your Flowday tasks',
+  plannerCapacityTitle: 'Your next 7 days',
+  plannerCapacityPlanned: '{planned} planned of {free} free',
+  plannerLegendBusy: 'Already busy',
+  plannerLegendNew: 'New from plan',
+  plannerEmptyTitle: 'Tell Flowday what you want to achieve',
+  plannerEmptyBody: 'Write one goal. Claude splits it into steps and fits them into your free time.',
+  plannerSignIn: 'Sign in to plan your week with AI.',
+  plannerProposed: 'Suggested sessions',
+  plannerAccept: 'Add {count} to my tasks',
+  plannerAccepted: '{count} tasks added to your days',
+  plannerNothingFits: 'Nothing fit into your free time. Try a wider time window or more hours per day.',
+  plannerErrorDailyLimit: 'You reached today’s limit of 10 plans. Try again tomorrow.',
+  plannerErrorBusy: 'The AI is busy right now. Try again in a minute.',
+  plannerErrorNotReady: 'The AI planner is not set up yet.',
+  plannerErrorGeneric: 'Could not create a plan. Try again.',
+  plannerErrorOffline: 'You are offline. Connect to the internet to plan your week.',
+  plannerPoweredBy: 'Powered by Claude',
   toastAnalyticsView: 'Analytics view: 94% on-time velocity'
 };
 
@@ -636,6 +696,36 @@ const HE_TRANSLATIONS: TranslationDictionary = {
   upNextAllDoneBody: 'אין כרגע משימות פתוחות. תיהנה מהזמן הפנוי.',
   upNextSignedOut: 'התחבר כדי לראות את המשימות הקרובות שלך.',
   upNextAria: 'משימות קרובות',
+  plannerGoalLabel: 'המטרה שלך ל-7 הימים הקרובים',
+  plannerGoalPlaceholder: 'להיכנס לכושר: 3 אימונים ו-2 ארוחות בריאות השבוע',
+  plannerSettings: 'הגדרות תכנון',
+  plannerDayWindow: 'לתכנן בין',
+  plannerTo: 'עד',
+  plannerMaxPerDay: 'מקסימום עבודה חדשה ביום',
+  plannerGenerate: 'תכנן את השבוע שלי',
+  plannerGenerating: 'מתכנן את השבוע שלך…',
+  plannerGeneratingHint: 'Claude משבץ את המטרה שלך בזמן הפנוי. זה יכול לקחת עד דקה.',
+  plannerRegenerate: 'תכנן מחדש',
+  plannerDiscard: 'בטל תוכנית',
+  plannerUsesCalendar: 'מתחשב במשימות וביומן Google שלך',
+  plannerUsesTasksOnly: 'מתחשב במשימות Flowday שלך',
+  plannerCapacityTitle: '7 הימים הקרובים שלך',
+  plannerCapacityPlanned: '{planned} מתוכננות מתוך {free} פנויות',
+  plannerLegendBusy: 'כבר תפוס',
+  plannerLegendNew: 'חדש מהתוכנית',
+  plannerEmptyTitle: 'ספר ל-Flowday מה תרצה להשיג',
+  plannerEmptyBody: 'כתוב מטרה אחת. Claude יחלק אותה לשלבים וישבץ אותם בזמן הפנוי שלך.',
+  plannerSignIn: 'התחבר כדי לתכנן את השבוע שלך עם AI.',
+  plannerProposed: 'מפגשים מוצעים',
+  plannerAccept: 'הוסף {count} למשימות שלי',
+  plannerAccepted: '{count} משימות נוספו לימים שלך',
+  plannerNothingFits: 'שום דבר לא נכנס לזמן הפנוי שלך. נסה טווח שעות רחב יותר או יותר שעות ביום.',
+  plannerErrorDailyLimit: 'הגעת למגבלה של 10 תוכניות להיום. נסה שוב מחר.',
+  plannerErrorBusy: 'ה-AI עמוס כרגע. נסה שוב בעוד דקה.',
+  plannerErrorNotReady: 'מתכנן ה-AI עדיין לא הוגדר.',
+  plannerErrorGeneric: 'לא ניתן ליצור תוכנית. נסה שוב.',
+  plannerErrorOffline: 'אין חיבור לאינטרנט. התחבר כדי לתכנן את השבוע.',
+  plannerPoweredBy: 'מופעל על ידי Claude',
   toastAnalyticsView: 'ניתוח נתונים: 94% עמידה בזמנים'
 };
 

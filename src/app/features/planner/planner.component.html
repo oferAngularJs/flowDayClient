@@ -1,46 +1,45 @@
-@if (plannerService.weeklyPlan(); as plan) {
-  <section class="space-y-4 block transition-opacity duration-200">
-    <!-- View Navigation / Breadcrumb -->
-    <div class="flex items-center justify-between pb-1">
+<section class="space-y-4 block">
+  <!-- Back to dashboard -->
+  <div class="flex items-center justify-between pb-1">
+    <button
+      type="button"
+      (click)="navigateToDashboard.emit()"
+      class="flex items-center gap-1 text-primary text-label-md font-label-md hover:underline active:scale-95 transition-transform cursor-pointer">
+      <span class="material-symbols-outlined text-[16px] rtl:rotate-180">arrow_back</span>
+      <span>{{ langService.translations().backToDashboard }}</span>
+    </button>
+  </div>
+
+  <!-- Title -->
+  <div>
+    <h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface tracking-tight">
+      {{ langService.translations().weeklyAiPlanner }}
+    </h1>
+    <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+      {{ langService.translations().plannerEmptyBody }}
+    </p>
+  </div>
+
+  @if (!authService.isConnected()) {
+    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 p-5 text-center space-y-3">
+      <span class="material-symbols-outlined text-[32px] text-primary">auto_awesome</span>
+      <p class="text-body-md text-on-surface">{{ langService.translations().plannerSignIn }}</p>
       <button
         type="button"
-        (click)="navigateToDashboard.emit()"
-        class="flex items-center gap-1 text-primary text-label-md font-label-md hover:underline active:scale-95 transition-transform cursor-pointer">
-        <span class="material-symbols-outlined text-[16px] rtl:rotate-180">arrow_back</span>
-        <span>{{ langService.translations().backToDashboard }}</span>
+        (click)="requestSignIn.emit()"
+        class="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md inline-flex items-center gap-1.5 active:scale-95 transition-transform cursor-pointer">
+        <span class="material-symbols-outlined text-[16px]">login</span>
+        {{ langService.translations().continueWithGoogle }}
       </button>
-      <span class="text-[11px] font-code-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-semibold">
-        {{ langService.demo(plan.aiModelVersion) }}
-      </span>
     </div>
+  } @else {
+    <!-- Goal, settings and "Plan my week" -->
+    <app-planning-target />
 
-    <!-- Title Header -->
-    <div>
-      <h1 class="text-headline-lg-mobile font-headline-lg-mobile text-on-surface tracking-tight">
-        {{ langService.translations().weeklyAiPlanner }}
-      </h1>
-      <p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
-        {{ langService.translations().plannerSubtitle }}
-      </p>
-    </div>
+    <!-- Next 7 days: busy vs. planned -->
+    <app-capacity-budget />
 
-    <!-- Active Planning Target Card -->
-    <app-planning-target
-      [targetGoal]="plan.targetGoal"
-      [weekRange]="langService.demo(plan.weekRangeLabel)"
-      [syncStatus]="langService.demo(plan.syncStatusLabel)"
-      [isAnalyzing]="plannerService.isAnalyzing()"
-      (reanalyze)="plannerService.reanalyzeGoal()" />
-
-    <!-- Weekly Capacity Budget Card with Bar Chart -->
-    <app-capacity-budget [capacity]="plan.capacity" />
-
-    <!-- Proposed Breakdown Task List & Action Footer -->
-    <app-proposed-tasks
-      [tasks]="plan.proposedTasks"
-      [selectedCount]="plannerService.selectedTaskCount()"
-      (toggleTaskSelection)="plannerService.toggleTaskSelection($event)"
-      (adjustFilters)="plannerService.adjustFilters()"
-      (acceptPlan)="onAcceptPlan()" />
-  </section>
-}
+    <!-- Suggested sessions -->
+    <app-proposed-tasks (acceptPlan)="onAcceptPlan()" />
+  }
+</section>

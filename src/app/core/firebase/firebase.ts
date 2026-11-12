@@ -1,3 +1,4 @@
+import { getFunctions } from 'firebase/functions';
 import { initializeApp } from 'firebase/app';
 import { browserLocalPersistence, getAuth, setPersistence } from 'firebase/auth';
 import {
@@ -37,3 +38,6 @@ export const firestore = initializeFirestore(firebaseApp, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
   ignoreUndefinedProperties: true
 });
+
+/** Cloud Functions (Node.js) in the same project; must match the region the functions deploy to. */
+export const cloudFunctions = getFunctions(firebaseApp, 'europe-west1');

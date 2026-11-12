@@ -1,76 +1,56 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { LanguageService } from '../../../../core/services/language.service';
-import { CapacityBudget } from '../../../../core/models/planner.model';
+import { PlannerService } from '../../../../core/services/planner.service';
+import { DayCapacity } from '../../../../core/models/planner.model';
 
+/** 7-day bar chart: time already busy plus the time the checked sessions would add. */
 @Component({
   selector: 'app-capacity-budget',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant/40">
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant">{{ langService.translations().capacityBudget }}</span>
-          <div class="flex items-baseline gap-2 mt-0.5">
-            <span class="text-headline-md font-headline-md text-on-surface">{{ capacity().plannedLabel }}</span>
-            <span class="text-body-sm font-body-sm text-on-surface-variant">{{ langService.demo(capacity().totalFreeLabel) }}</span>
-          </div>
-        </div>
-        <span class="px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-primary font-semibold flex items-center gap-1">
-          <span class="w-2 h-2 rounded-full bg-primary"></span>
-          {{ langService.demo(capacity().statusLabel) }}
+      <div class="flex items-start justify-between gap-2">
+        <span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant">{{ t().plannerCapacityTitle }}</span>
+        <span class="text-[12px] text-on-surface-variant">
+          {{ lang.t('plannerCapacityPlanned', { planned: planner.plannedTotalLabel(), free: planner.freeTotalLabel() }) }}
         </span>
       </div>
 
-      <!-- Mini Workload Distribution Bars -->
-      <div class="mt-4 pt-3 border-t border-outline-variant/20">
-        <div class="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant mb-2">
-          <span>{{ langService.translations().dailyPlannedWorkload }}</span>
-          <span>{{ langService.demo(capacity().maxDailyTarget) }}</span>
-        </div>
-        <div class="grid grid-cols-5 gap-2 items-end h-24 pt-2">
-          @for (day of capacity().dailyDistribution; track day.dayLabel) {
-            <div class="flex flex-col items-center gap-1 h-full justify-end">
-              <span
-                class="text-[10px] font-code-sm"
-                [class.font-bold]="day.isWarning"
-                [class.text-on-surface-variant]="!day.isWarning"
-                [style.color]="day.isWarning ? '#c2410c' : null">
-                {{ day.hoursLabel }}
-              </span>
-              <div
-                class="w-full rounded-t transition-all duration-300"
-                [style.height.%]="day.percentageHeight"
-                [style.backgroundColor]="day.isWarning ? '#f97316' : null"
-                [class.ring-2]="day.isWarning"
-                [style.--tw-ring-color]="day.isWarning ? '#fff7ed' : null"
-                [class.bg-primary]="!day.isWarning"
-                [class.opacity-60]="!day.isWarning"></div>
-              <span
-                class="text-[11px] font-label-sm"
-                [class.font-bold]="day.isWarning"
-                [class.text-on-surface-variant]="!day.isWarning"
-                [style.color]="day.isWarning ? '#c2410c' : null">
-                {{ langService.demo(day.dayLabel) }}
-              </span>
+      <div class="grid grid-cols-7 gap-1.5 items-end h-28 mt-3">
+        @for (day of planner.capacity(); track day.date) {
+          <div class="flex flex-col items-center gap-1 h-full justify-end">
+            <span class="text-[10px] font-code-sm" [class.text-primary]="day.plannedMinutes > 0" [class.text-on-surface-variant]="day.plannedMinutes === 0">
+              {{ day.plannedMinutes > 0 ? hours(day.plannedMinutes) : '' }}
+            </span>
+            <div class="w-full flex-1 flex flex-col justify-end rounded overflow-hidden bg-surface-container-low">
+              <div class="w-full bg-primary transition-all duration-300" [style.height.%]="pct(day, day.plannedMinutes)"></div>
+              <div class="w-full bg-outline-variant transition-all duration-300" [style.height.%]="pct(day, day.busyMinutes)"></div>
             </div>
-          }
-        </div>
+            <span class="text-[11px] font-label-sm text-on-surface-variant">{{ day.dayLabel }}</span>
+          </div>
+        }
       </div>
 
-      <!-- Thursday Workload Warning Notice -->
-      @if (capacity().warningMessage) {
-        <div class="mt-3.5 p-2.5 rounded-lg bg-[#fff7ed] border border-[#ffedd5] flex items-center gap-2 text-on-surface">
-          <span class="material-symbols-outlined text-[#c2410c] text-[18px]">info</span>
-          <p class="text-[12px] font-body-sm text-[#9a3412] leading-tight">
-            <strong>{{ langService.demo(capacity().warningDay) }}</strong> {{ langService.demo(capacity().warningMessage) }}
-          </p>
-        </div>
-      }
+      <div class="mt-2.5 flex items-center gap-3 text-[11px] text-on-surface-variant">
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-outline-variant"></span>{{ t().plannerLegendBusy }}</span>
+        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-primary"></span>{{ t().plannerLegendNew }}</span>
+      </div>
     </div>
   `
 })
 export class CapacityBudgetComponent {
-  readonly langService = inject(LanguageService);
-  readonly capacity = input.required<CapacityBudget>();
+  readonly planner = inject(PlannerService);
+  readonly lang = inject(LanguageService);
+  readonly t = this.lang.translations;
+
+  pct(day: DayCapacity, minutes: number): number {
+    if (!day.windowMinutes) return 0;
+    return Math.min(100, Math.round((minutes / day.windowMinutes) * 100));
+  }
+
+  hours(minutes: number): string {
+    const h = minutes / 60;
+    return `${Number.isInteger(h) ? h : h.toFixed(1)}h`;
+  }
 }

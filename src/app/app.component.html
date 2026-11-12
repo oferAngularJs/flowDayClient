@@ -20,7 +20,7 @@
     @if (currentView() === 'dashboard') {
       <app-dashboard (navigateToPlanner)="switchView('planner')" (requestSignIn)="isGoogleModalOpen.set(true)" />
     } @else {
-      <app-planner (navigateToDashboard)="switchView('dashboard')" />
+      <app-planner (navigateToDashboard)="switchView('dashboard')" (requestSignIn)="isGoogleModalOpen.set(true)" />
     }
   </main>
 
